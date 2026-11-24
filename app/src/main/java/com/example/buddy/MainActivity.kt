@@ -22,7 +22,7 @@ class MainActivity : Activity() {
             setPadding(32, 32, 32, 32)
         }
         val title = TextView(this).apply { text = "BUDDY"; textSize = 34f; gravity = Gravity.CENTER }
-        status = TextView(this).apply { text = "Your voice assistant is ready"; textSize = 17f; gravity = Gravity.CENTER }
+        status = TextView(this).apply { text = "Buddy is ready. Tap Start, then speak directly."; textSize = 17f; gravity = Gravity.CENTER }
         val start = Button(this).apply { text = "START LISTENING"; setOnClickListener { requestAndStart() } }
         val stop = Button(this).apply { text = "STOP"; setOnClickListener { stopService(Intent(this@MainActivity, BuddyListeningService::class.java)); status.text = "Stopped" } }
         layout.addView(title); layout.addView(status); layout.addView(start); layout.addView(stop)
@@ -44,7 +44,7 @@ class MainActivity : Activity() {
         try {
             val i = Intent(this, BuddyListeningService::class.java)
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(i) else startService(i)
-            status.text = "Listening for “Buddy”…"
+            status.text = "Listening — speak a command directly…"
         } catch (e: Exception) {
             status.text = "Could not start. Open Buddy and try again."
         }
