@@ -56,16 +56,16 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }
         try { recognizer?.startListening(intent) } catch (_: Exception) { restarting = false; stopSelf() }
     }
 
     private fun handle(text: String) {
-        val s = text.lowercase(Locale.ROOT)
+        val s = text.lowercase(Locale.ROOT).trim()
         if (!awake) {
-            if (s.contains("buddy") || s.contains("बडी") || s.contains("बडी")) {
+            if (s.contains("buddy") || s.contains("बडी")) {
                 awake = true
                 speak("जी, बताइए")
             }
@@ -80,12 +80,8 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 val now = java.text.SimpleDateFormat("hh:mm a", Locale.getDefault()).format(java.util.Date())
                 speak("अभी समय है $now")
             }
-            s.contains("youtube") -> {
-                openApp("com.google.android.youtube", "YouTube")
-            }
-            s.contains("chrome") -> {
-                openApp("com.android.chrome", "Chrome")
-            }
+            s.contains("youtube") -> openApp("com.google.android.youtube", "YouTube")
+            s.contains("chrome") -> openApp("com.android.chrome", "Chrome")
             s.contains("सेटिंग") || s.contains("settings") -> {
                 startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 speak("सेटिंग्स खोल रहा हूँ")
@@ -111,7 +107,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onBeginningOfSpeech() { }
     override fun onRmsChanged(rmsdB: Float) { }
     override fun onBufferReceived(buffer: ByteArray?) { }
-    override fun onEndOfSpeech() { restarting = false; listen() }
+    override fun onEndOfSpeech() { }
     override fun onError(error: Int) {
         restarting = false
         if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) stopSelf()
@@ -119,14 +115,10 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
     override fun onResults(results: Bundle?) {
         restarting = false
-        val words = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-        words?.firstOrNull()?.let { handle(it) }
+        results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { handle(it) }
         listen()
     }
-    override fun onPartialResults(partialResults: Bundle?) {
-        val words = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-        words?.firstOrNull()?.let { if (!awake && (it.contains("Buddy", true) || it.contains("बडी"))) handle(it) }
-    }
+    override fun onPartialResults(partialResults: Bundle?) { }
     override fun onEvent(eventType: Int, params: Bundle?) { }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
