@@ -8,6 +8,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.provider.AlarmClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -76,6 +78,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             s.contains("रुक") || s.contains("stop listening") || s == "stop" -> {
                 speak("ठीक है, मैं रुक रहा हूँ")
                 awake = false
+                Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 900)
             }
             s.contains("समय") || s.contains("time") -> {
                 val now = java.text.SimpleDateFormat("hh:mm a", Locale.getDefault()).format(java.util.Date())
