@@ -9,7 +9,8 @@ A starter Android voice-assistant project built with Kotlin and Android SpeechRe
 - Open YouTube, Chrome, and Android Settings by voice.
 - Ask for the current time.
 - Say an alarm request with a numeric time (for example, "alarm 7:30") to open the system alarm screen for confirmation.
-- Tap **STOP** to stop the foreground listening service.
+- Say **रुक जा**, **stop listening**, or **stop** to end the foreground microphone service.
+- Tap **STOP** in the app to stop it manually.
 
 ## Build the APK
 Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. When the workflow succeeds:
