@@ -1,29 +1,33 @@
-# Buddy Android Assistant
+# Buddy Android Voice Assistant
 
-A Kotlin Android voice assistant prototype. Tap **START LISTENING** and then speak commands directly — you do not need to say “Buddy” before every command.
+A Kotlin Android voice-control prototype. Tap **START LISTENING**, then speak commands directly — you do not need to say “Buddy” before every command.
 
-## Voice commands currently supported
-- Say **रुक जा**, **stop listening**, or **stop** to stop the microphone service.
-- Ask for the current time.
-- Open YouTube, Chrome, Gmail, Play Store, Photos, Camera, Maps, Contacts, Messages, Phone dialer, and Calculator (availability depends on apps installed on the phone).
-- Open Android Settings, Wi-Fi settings, or Bluetooth settings.
-- Say an alarm request with a numeric time (for example, "alarm 7:30") to open the system alarm screen for confirmation.
+## Current commands
+- Stop listening: **रुक जा**, **stop listening**, or **stop**.
+- Time, date, and battery status.
+- Open YouTube, Chrome, Gmail, Play Store, Photos, Camera, Maps, Contacts, Messages, Phone dialer, Wi-Fi/Bluetooth settings, Android Settings, and Calculator.
+- Try opening other installed apps by saying their visible app name (for example, "open WhatsApp"). This depends on Android package visibility and the app's launcher entry.
+- Search the web by saying **search [your words]** or **सर्च [your words]**.
+- Set an alarm by saying a numeric time such as **alarm 7:30**; Buddy opens the system clock screen for your confirmation.
+- Basic Hindi greetings and assistant identity responses.
 
-## Build the APK
+## Build and install
 Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. When the workflow succeeds:
 1. Open the repository's **Actions** tab.
 2. Open the latest successful **Build Buddy APK** run.
 3. Under **Artifacts**, download **Buddy-debug-apk**.
-4. Extract the ZIP and install `app-debug.apk` on your Android phone. Android may ask you to allow installation from that source.
+4. Extract the ZIP and install `app-debug.apk`. Android may ask you to allow installation from that source.
 
-## Important limitations
-- This is an early voice-control prototype, not yet a full conversational AI or unrestricted phone operator.
-- You must open Buddy and tap **START LISTENING** to start the microphone. Android restricts microphone foreground services and background starts; Buddy cannot promise always-on listening while locked or after reboot.
-- Speech recognition availability and language quality depend on the phone's speech service and may require internet. Offline speech recognition must be installed and enabled separately if supported by the device.
-- Voice actions are limited to the commands listed above. Arbitrary taps, secure settings, sending messages, making calls, payments, banking, and private-data access are not automated.
-- Sensitive actions should require clear confirmation. Use **STOP** in the app or say **रुक जा** to stop listening.
+## Limitations — read before use
+- This is not yet a general-purpose AI model. Offline capability currently means local command handling and phone intents, not an installed Qwen model or unrestricted conversation.
+- Online search opens a browser/search provider; it is not an online LLM chat integration.
+- Speech recognition availability, language support, and offline recognition depend on the phone's installed speech service. The app does not bundle an offline speech-recognition model.
+- You must open Buddy and tap **START LISTENING**. Android restricts background microphone starts and continuous listening; do not expect it to listen after force-stop, reboot, or reliably while locked.
+- Buddy does not silently send messages, place calls, access private media, make payments, operate banking apps, or bypass Android security. Sensitive actions require user interaction.
+- Use **STOP** or say **रुक जा** to end microphone use.
 
-## Project
+## Technical
 - Package: `com.example.buddy`
 - Minimum Android: 8.0 (API 26)
 - Target Android: API 35
+- Language: Kotlin
