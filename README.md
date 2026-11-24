@@ -1,16 +1,13 @@
 # Buddy Android Assistant
 
-A starter Android voice-assistant project built with Kotlin and Android SpeechRecognizer/TextToSpeech.
+A Kotlin Android voice assistant prototype. Tap **START LISTENING** and then speak commands directly — you do not need to say “Buddy” before every command.
 
-## Current prototype features
-- Tap **START LISTENING** and grant microphone permission.
-- Say **Buddy** or **बडी** to activate the command listener.
-- Hindi speech response.
-- Open YouTube, Chrome, and Android Settings by voice.
+## Voice commands currently supported
+- Say **रुक जा**, **stop listening**, or **stop** to stop the microphone service.
 - Ask for the current time.
+- Open YouTube, Chrome, Gmail, Play Store, Photos, Camera, Maps, Contacts, Messages, Phone dialer, and Calculator (availability depends on apps installed on the phone).
+- Open Android Settings, Wi-Fi settings, or Bluetooth settings.
 - Say an alarm request with a numeric time (for example, "alarm 7:30") to open the system alarm screen for confirmation.
-- Say **रुक जा**, **stop listening**, or **stop** to end the foreground microphone service.
-- Tap **STOP** in the app to stop it manually.
 
 ## Build the APK
 Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. When the workflow succeeds:
@@ -20,11 +17,11 @@ Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. Whe
 4. Extract the ZIP and install `app-debug.apk` on your Android phone. Android may ask you to allow installation from that source.
 
 ## Important limitations
-- This is an early prototype, not a full hands-free assistant. Android speech recognition may depend on the device's speech service and internet connection.
-- Wake-word detection is not a dedicated on-device wake-word engine and is not guaranteed to work while the app is closed or the phone is locked.
-- The alarm command opens the phone's clock/alarm confirmation screen; it does not silently set an alarm.
-- App launching is limited to the listed apps. No payment, banking, private-photo, or messaging actions are implemented.
-- Keep microphone access under your control; use **STOP** when you do not want Buddy listening.
+- This is an early voice-control prototype, not yet a full conversational AI or unrestricted phone operator.
+- You must open Buddy and tap **START LISTENING** to start the microphone. Android restricts microphone foreground services and background starts; Buddy cannot promise always-on listening while locked or after reboot.
+- Speech recognition availability and language quality depend on the phone's speech service and may require internet. Offline speech recognition must be installed and enabled separately if supported by the device.
+- Voice actions are limited to the commands listed above. Arbitrary taps, secure settings, sending messages, making calls, payments, banking, and private-data access are not automated.
+- Sensitive actions should require clear confirmation. Use **STOP** in the app or say **रुक जा** to stop listening.
 
 ## Project
 - Package: `com.example.buddy`
