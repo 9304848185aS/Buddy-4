@@ -5,12 +5,15 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.provider.AlarmClock
+import android.provider.MediaStore
+import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -21,15 +24,15 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var recognizer: SpeechRecognizer? = null
     private var tts: TextToSpeech? = null
     private var ready = false
-    private var awake = false
     private var restarting = false
+    private var stopping = false
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
         val notification = if (Build.VERSION.SDK_INT >= 26)
             Notification.Builder(this, "buddy_listening").setContentTitle("Buddy is listening")
-                .setContentText("Say Buddy to activate, or tap Stop in the app.")
+                .setContentText("Voice control is active. Say stop to end listening.")
                 .setSmallIcon(android.R.drawable.ic_btn_speak_now).build()
         else Notification.Builder(this).setContentTitle("Buddy is listening")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now).build()
@@ -54,7 +57,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun listen() {
-        if (restarting || recognizer == null) return
+        if (restarting || stopping || recognizer == null) return
         restarting = true
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -67,31 +70,33 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private fun handle(text: String) {
         val s = text.lowercase(Locale.ROOT).trim()
-        if (!awake) {
-            if (s.contains("buddy") || s.contains("बडी")) {
-                awake = true
-                speak("जी, बताइए")
-            }
-            return
-        }
+        if (s.isBlank() || stopping) return
         when {
-            s.contains("रुक") || s.contains("stop listening") || s == "stop" -> {
-                speak("ठीक है, मैं रुक रहा हूँ")
-                awake = false
-                Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 900)
+            s.contains("रुक") || s.contains("बंद सुनना") || s.contains("stop listening") || s == "stop" -> {
+                stopping = true
+                speak("ठीक है, सुनना बंद कर रहा हूँ")
+                Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1000)
             }
-            s.contains("समय") || s.contains("time") -> {
+            s.contains("समय") || s.contains("time") || s.contains("कितने बजे") -> {
                 val now = java.text.SimpleDateFormat("hh:mm a", Locale.getDefault()).format(java.util.Date())
                 speak("अभी समय है $now")
             }
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
-            s.contains("youtube") -> openApp("com.google.android.youtube", "YouTube")
-            s.contains("chrome") -> openApp("com.android.chrome", "Chrome")
-            s.contains("सेटिंग") || s.contains("settings") -> {
-                startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                speak("सेटिंग्स खोल रहा हूँ")
-            }
-            else -> speak("यह command अभी मेरे पास उपलब्ध नहीं है।")
+            s.contains("वाईफाई") || s.contains("wi-fi") || s.contains("wifi") -> openSettings(Settings.Panel.ACTION_WIFI, "वाई-फाई सेटिंग")
+            s.contains("ब्लूटूथ") || s.contains("bluetooth") -> openSettings(Settings.Panel.ACTION_BLUETOOTH, "ब्लूटूथ सेटिंग")
+            s.contains("सेटिंग") || s.contains("settings") -> openSettings(Settings.ACTION_SETTINGS, "सेटिंग्स")
+            s.contains("कैमरा") || s.contains("camera") -> openIntent(Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA), "कैमरा")
+            s.contains("कॉल") || s.contains("फोन") || s.contains("dialer") -> openIntent(Intent(Intent.ACTION_DIAL), "फोन डायलर")
+            s.contains("मैसेज") || s.contains("message") || s.contains("sms") -> openIntent(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MESSAGING), "मैसेज")
+            s.contains("कॉन्टैक्ट") || s.contains("contacts") -> openIntent(Intent(Intent.ACTION_VIEW, Uri.parse("content://contacts/people/")), "कॉन्टैक्ट")
+            s.contains("मैप") || s.contains("maps") || s.contains("नेविगेशन") -> openIntent(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=")), "मैप")
+            s.contains("यूट्यूब") || s.contains("youtube") -> openApp("com.google.android.youtube", "YouTube")
+            s.contains("क्रोम") || s.contains("chrome") || s.contains("ब्राउज़र") -> openApp("com.android.chrome", "Chrome")
+            s.contains("जीमेल") || s.contains("gmail") -> openApp("com.google.android.gm", "Gmail")
+            s.contains("प्ले स्टोर") || s.contains("play store") -> openApp("com.android.vending", "Play Store")
+            s.contains("फोटो") || s.contains("गैलरी") || s.contains("gallery") || s.contains("photos") -> openApp("com.google.android.apps.photos", "Photos")
+            s.contains("कैलकुलेटर") || s.contains("calculator") -> openIntent(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALCULATOR), "कैलकुलेटर")
+            else -> speak("यह काम अभी उपलब्ध नहीं है। ऐप खोलने या सेटिंग बदलने के लिए command बोलिए।")
         }
     }
 
@@ -109,8 +114,21 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             putExtra(AlarmClock.EXTRA_SKIP_UI, false)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        if (alarm.resolveActivity(packageManager) != null) { startActivity(alarm); speak("अलार्म सेट करने के लिए स्क्रीन खोल रहा हूँ") }
-        else speak("इस फोन में अलार्म ऐप नहीं मिला")
+        openIntent(alarm, "अलार्म")
+    }
+
+    private fun openSettings(action: String, label: String) {
+        openIntent(Intent(action), label)
+    }
+
+    private fun openIntent(intent: Intent, label: String) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+                speak("$label खोल रहा हूँ")
+            } else speak("$label इस फोन में उपलब्ध नहीं है")
+        } catch (_: Exception) { speak("$label नहीं खुल पाया") }
     }
 
     private fun openApp(pkg: String, label: String) {
@@ -134,12 +152,12 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onError(error: Int) {
         restarting = false
         if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) stopSelf()
-        else if (error != SpeechRecognizer.ERROR_CLIENT) listen()
+        else if (error != SpeechRecognizer.ERROR_CLIENT && !stopping) listen()
     }
     override fun onResults(results: Bundle?) {
         restarting = false
         results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { handle(it) }
-        listen()
+        if (!stopping) listen()
     }
     override fun onPartialResults(partialResults: Bundle?) { }
     override fun onEvent(eventType: Int, params: Bundle?) { }
