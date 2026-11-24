@@ -94,7 +94,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             }
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
             s.contains("वाईफाई") || s.contains("wi-fi") || s.contains("wifi") -> openSettings(Settings.Panel.ACTION_WIFI, "वाई-फाई सेटिंग")
-            s.contains("ब्लूटूथ") || s.contains("bluetooth") -> openSettings(Settings.Panel.ACTION_BLUETOOTH, "ब्लूटूथ सेटिंग")
+            s.contains("ब्लूटूथ") || s.contains("bluetooth") -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS, "ब्लूटूथ सेटिंग")
             s.contains("सेटिंग") || s.contains("settings") -> openSettings(Settings.ACTION_SETTINGS, "सेटिंग्स")
             s.contains("कैमरा") || s.contains("camera") -> openIntent(Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA), "कैमरा")
             s.contains("कॉल") || s.contains("फोन") || s.contains("dialer") -> openIntent(Intent(Intent.ACTION_DIAL), "फोन डायलर")
