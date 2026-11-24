@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.AlarmClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -80,6 +81,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 val now = java.text.SimpleDateFormat("hh:mm a", Locale.getDefault()).format(java.util.Date())
                 speak("अभी समय है $now")
             }
+            s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
             s.contains("youtube") -> openApp("com.google.android.youtube", "YouTube")
             s.contains("chrome") -> openApp("com.android.chrome", "Chrome")
             s.contains("सेटिंग") || s.contains("settings") -> {
@@ -88,6 +90,24 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             }
             else -> speak("यह command अभी मेरे पास उपलब्ध नहीं है।")
         }
+    }
+
+    private fun setAlarm(command: String) {
+        val match = Regex("(\\d{1,2})(?::(\\d{2}))?").find(command)
+        if (match == null) { speak("कृपया समय बोलिए, जैसे अलार्म सात तीस"); return }
+        val hourInput = match.groupValues[1].toIntOrNull() ?: return
+        val minute = match.groupValues.getOrNull(2)?.toIntOrNull() ?: 0
+        if (hourInput !in 0..23 || minute !in 0..59) { speak("समय सही नहीं है"); return }
+        val hour = if (command.contains("pm") && hourInput in 1..11) hourInput + 12 else if (command.contains("am") && hourInput == 12) 0 else hourInput
+        val alarm = Intent(AlarmClock.ACTION_SET_ALARM).apply {
+            putExtra(AlarmClock.EXTRA_HOUR, hour)
+            putExtra(AlarmClock.EXTRA_MINUTES, minute)
+            putExtra(AlarmClock.EXTRA_MESSAGE, "Buddy alarm")
+            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        if (alarm.resolveActivity(packageManager) != null) { startActivity(alarm); speak("अलार्म सेट करने के लिए स्क्रीन खोल रहा हूँ") }
+        else speak("इस फोन में अलार्म ऐप नहीं मिला")
     }
 
     private fun openApp(pkg: String, label: String) {
