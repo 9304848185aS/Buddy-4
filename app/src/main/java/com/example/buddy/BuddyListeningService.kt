@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -19,6 +20,8 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnInitListener {
     private var recognizer: SpeechRecognizer? = null
@@ -78,8 +81,16 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1000)
             }
             s.contains("समय") || s.contains("time") || s.contains("कितने बजे") -> {
-                val now = java.text.SimpleDateFormat("hh:mm a", Locale.getDefault()).format(java.util.Date())
+                val now = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
                 speak("अभी समय है $now")
+            }
+            s.contains("तारीख") || s.contains("date") -> {
+                val today = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("hi", "IN")).format(Date())
+                speak("आज $today है")
+            }
+            s.contains("बैटरी") || s.contains("battery") -> {
+                val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
+                speak("बैटरी " + bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + " प्रतिशत है")
             }
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
             s.contains("वाईफाई") || s.contains("wi-fi") || s.contains("wifi") -> openSettings(Settings.Panel.ACTION_WIFI, "वाई-फाई सेटिंग")
@@ -96,7 +107,44 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             s.contains("प्ले स्टोर") || s.contains("play store") -> openApp("com.android.vending", "Play Store")
             s.contains("फोटो") || s.contains("गैलरी") || s.contains("gallery") || s.contains("photos") -> openApp("com.google.android.apps.photos", "Photos")
             s.contains("कैलकुलेटर") || s.contains("calculator") -> openIntent(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALCULATOR), "कैलकुलेटर")
-            else -> speak("यह काम अभी उपलब्ध नहीं है। ऐप खोलने या सेटिंग बदलने के लिए command बोलिए।")
+            s.startsWith("search ") || s.startsWith("सर्च ") -> searchWeb(s)
+            else -> openNamedAppOrReply(s)
+        }
+    }
+
+
+    private fun searchWeb(command: String) {
+        val query = command.removePrefix("search").removePrefix("सर्च").trim()
+        if (query.isBlank()) { speak("क्या search करना है?"); return }
+        val intent = Intent(Intent.ACTION_WEB_SEARCH).putExtra("query", query).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (intent.resolveActivity(packageManager) != null) openIntent(intent, "सर्च")
+        else openIntent(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + Uri.encode(query))), "सर्च")
+    }
+
+    private fun openNamedAppOrReply(command: String) {
+        val cleaned = command.replace("open ", "").replace("खोलो", "").trim()
+        if (cleaned.isNotBlank()) {
+            val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val matches = packageManager.queryIntentActivities(launcher, 0)
+            val match = matches.firstOrNull { info ->
+                val label = info.loadLabel(packageManager).toString().lowercase(Locale.ROOT)
+                label == cleaned || label.contains(cleaned)
+            }
+            if (match != null) {
+                val launch = packageManager.getLaunchIntentForPackage(match.activityInfo.packageName)
+                if (launch != null) {
+                    launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(launch)
+                    speak("ऐप खोल रहा हूँ")
+                    return
+                }
+            }
+        }
+        when {
+            command.contains("नमस्ते") || command.contains("hello") || command == "hi" -> speak("नमस्ते, बताइए मैं क्या मदद करूँ?")
+            command.contains("तुम कौन") || command.contains("who are you") -> speak("मैं Buddy हूँ, आपका फोन voice assistant।")
+            command.contains("धन्यवाद") || command.contains("thank you") -> speak("आपका स्वागत है")
+            else -> speak("यह काम अभी मेरे commands में नहीं है। ऐप का नाम बोलकर खोलें या search command दें।")
         }
     }
 
