@@ -9,6 +9,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.Executors
+import java.util.Locale
 
 object AiBrain {
     private val executor = Executors.newSingleThreadExecutor()
