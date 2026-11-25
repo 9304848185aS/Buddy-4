@@ -120,6 +120,8 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
                 speak("बैटरी " + bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + " प्रतिशत है")
             }
+            s.startsWith("type ") || s.startsWith("टाइप करो ") ||
+                s.startsWith("लिखो ") || s.startsWith("लिख दो ") -> typeIntoFocusedField(s)
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
             s.contains("वाईफाई") || s.contains("wi-fi") || s.contains("wifi") -> openSettings(Settings.Panel.ACTION_WIFI, "वाई-फाई सेटिंग")
             s.contains("ब्लूटूथ") || s.contains("bluetooth") -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS, "ब्लूटूथ सेटिंग")
@@ -137,6 +139,28 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             s.contains("कैलकुलेटर") || s.contains("calculator") -> openIntent(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALCULATOR), "कैलकुलेटर")
             s.startsWith("search ") || s.startsWith("सर्च ") -> searchWeb(s)
             else -> openNamedAppOrReply(s)
+        }
+    }
+
+    private fun typeIntoFocusedField(command: String) {
+        val text = when {
+            command.startsWith("type ") -> command.removePrefix("type ").trim()
+            command.startsWith("टाइप करो ") -> command.removePrefix("टाइप करो ").trim()
+            command.startsWith("लिख दो ") -> command.removePrefix("लिख दो ").trim()
+            else -> command.removePrefix("लिखो ").trim()
+        }
+        if (text.isBlank()) {
+            speak("जो लिखवाना है, वह बोलिए।")
+            return
+        }
+        if (text.length > 1000) {
+            speak("एक बार में अधिकतम एक हजार अक्षर लिख सकता हूँ।")
+            return
+        }
+        pauseListening = true
+        BuddyTypingAccessibilityService.typeIntoFocusedField(text) { success ->
+            speak(if (success) "आपका text चुने हुए box में डाल दिया है। भेजने या search करने से पहले जाँच लें।"
+                  else "पहले ऐप में text box पर tap करके cursor रखें और Buddy की Accessibility typing permission चालू करें।")
         }
     }
 
