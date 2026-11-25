@@ -68,6 +68,23 @@ class MainActivity : Activity() {
             }
         })
 
+        content.addView(Button(this).apply {
+            text = "ENABLE OPTIONAL TEXT TYPING"
+            setOnClickListener {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Android Accessibility settings will open. Enable Buddy only if you want voice typing into the field you have focused.",
+                    Toast.LENGTH_LONG
+                ).show()
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+        })
+        content.addView(TextView(this).apply {
+            text = "Typing permission is optional. Buddy can only place your spoken text into the text field you have already focused. It does not read screen contents, tap buttons, submit forms, or send messages."
+            textSize = 13f
+            setPadding(0, 4, 0, 12)
+        })
+
         content.addView(label("AI BRAIN SETTINGS (OpenAI-compatible API)"))
         content.addView(label("API endpoint"))
         endpointInput = field("https://api.groq.com/openai/v1/chat/completions",
