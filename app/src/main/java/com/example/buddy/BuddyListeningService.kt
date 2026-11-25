@@ -19,6 +19,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -29,6 +30,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var ready = false
     private var restarting = false
     private var stopping = false
+    private var pauseListening = false
 
     override fun onCreate() {
         super.onCreate()
@@ -56,11 +58,37 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     override fun onInit(status: Int) {
         ready = status == TextToSpeech.SUCCESS
-        if (ready) tts?.language = Locale("hi", "IN")
+        if (ready) {
+            tts?.language = Locale("hi", "IN")
+            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) { }
+                override fun onDone(utteranceId: String?) {
+                    Handler(Looper.getMainLooper()).post {
+                        if (!stopping) {
+                            pauseListening = false
+                            listen()
+                        }
+                    }
+                }
+                @Deprecated("Deprecated in Java")
+                override fun onError(utteranceId: String?) {
+                    Handler(Looper.getMainLooper()).post {
+                        pauseListening = false
+                        if (!stopping) listen()
+                    }
+                }
+                override fun onError(utteranceId: String?, errorCode: Int) {
+                    Handler(Looper.getMainLooper()).post {
+                        pauseListening = false
+                        if (!stopping) listen()
+                    }
+                }
+            })
+        }
     }
 
     private fun listen() {
-        if (restarting || stopping || recognizer == null) return
+        if (restarting || stopping || pauseListening || recognizer == null) return
         restarting = true
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -78,7 +106,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             s.contains("रुक") || s.contains("बंद सुनना") || s.contains("stop listening") || s == "stop" -> {
                 stopping = true
                 speak("ठीक है, सुनना बंद कर रहा हूँ")
-                Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1000)
+                Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1500)
             }
             s.contains("समय") || s.contains("time") || s.contains("कितने बजे") -> {
                 val now = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
@@ -143,7 +171,10 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             command.contains("नमस्ते") || command.contains("hello") || command == "hi" -> speak("नमस्ते, बताइए मैं क्या मदद करूँ?")
             command.contains("तुम कौन") || command.contains("who are you") -> speak("मैं Buddy हूँ, आपका फोन voice assistant।")
             command.contains("धन्यवाद") || command.contains("thank you") -> speak("आपका स्वागत है")
-            else -> AiBrain.ask(this, command) { answer -> speak(answer) }
+            else -> {
+                pauseListening = true
+                AiBrain.ask(this, command) { answer -> speak(answer) }
+            }
         }
     }
 
@@ -188,7 +219,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun speak(message: String) {
-        if (ready) tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "buddy_reply")
+        if (ready) {
+            pauseListening = true
+            val result = tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "buddy_reply")
+            if (result == TextToSpeech.ERROR) {
+                pauseListening = false
+                if (!stopping) listen()
+            }
+        }
     }
 
     override fun onReadyForSpeech(params: Bundle?) { restarting = false }
@@ -199,12 +237,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onError(error: Int) {
         restarting = false
         if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) stopSelf()
-        else if (error != SpeechRecognizer.ERROR_CLIENT && !stopping) listen()
+        else if (error != SpeechRecognizer.ERROR_CLIENT && !stopping && !pauseListening) {
+            Handler(Looper.getMainLooper()).postDelayed({ listen() }, 500)
+        }
     }
     override fun onResults(results: Bundle?) {
         restarting = false
         results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { handle(it) }
-        if (!stopping) listen()
+        if (!stopping && !pauseListening) listen()
     }
     override fun onPartialResults(partialResults: Bundle?) { }
     override fun onEvent(eventType: Int, params: Bundle?) { }
