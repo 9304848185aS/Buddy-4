@@ -1,6 +1,6 @@
 # Buddy Android Voice Assistant
 
-A Kotlin Android voice-control prototype. Tap **START LISTENING**, then speak a command directly — you do not need to say “Buddy” before every command.
+A Kotlin Android voice-control prototype. Tap **START LISTENING**, then say **Buddy** to get its attention or speak a command directly.
 
 ## Current voice commands
 - Stop listening: **रुक जा**, **stop listening**, or **stop**.
@@ -14,7 +14,7 @@ A Kotlin Android voice-control prototype. Tap **START LISTENING**, then speak a 
 - Unrecognized voice questions are sent to the configured online AI provider. For clear app-opening, focused-field typing, or web-search requests, the AI planner may propose one supported action and waits for your spoken yes/no confirmation before doing it.
 
 ## Online AI setup
-Open Buddy's **AI Brain Settings** and enter an HTTPS OpenAI-compatible Chat Completions endpoint, the provider's exact model ID, and an API key. Save the settings. The app does not include a free or unlimited AI service; provider quotas and pricing can change. Never put an API key in this public repository or share it in a chat.
+Open Buddy's **AI Brain Settings** and enter an HTTPS OpenAI-compatible Chat Completions endpoint, the provider's exact model ID, and an API key. Save the settings. The API key is encrypted on-device using Android Keystore; older plaintext keys are migrated when possible. The app does not include a free or unlimited AI service; provider quotas and pricing can change. Never put an API key in this public repository or share it in a chat.
 
 ## Optional conversation memory
 Memory is **OFF by default**. If enabled and saved in settings, Buddy stores up to five recent user/assistant exchanges in local app preferences and sends that context with later AI questions. Use **CLEAR AI CHAT MEMORY** to clear the saved exchanges. Do not store passwords, payment information, or other sensitive details. This local preference storage is not encrypted storage.
@@ -29,7 +29,7 @@ Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. Whe
 ## Limitations — read before use
 - Offline capability currently means only local command handling and Android intents. There is no bundled offline Qwen/LLM model.
 - Speech recognition availability, language support, and offline recognition depend on the phone's installed speech service. The app does not bundle an offline speech-recognition model.
-- You must open Buddy and tap **START LISTENING**. Android restricts background microphone starts and continuous listening; do not expect it to listen after force-stop, reboot, or reliably while locked. The current build does not implement an always-on “Buddy” wake word.
+- You must open Buddy and tap **START LISTENING** first. While that foreground listening session is active, saying **Buddy** gets its attention; this is not an always-on hotword engine. Android restricts background microphone starts and continuous listening; do not expect it to listen after force-stop, reboot, or reliably while locked.
 - Online AI planning requires internet and a configured provider. The AI action planner is restricted to one action at a time: OPEN_APP, TYPE_TEXT in the already-focused field, or WEB_SEARCH. Buddy asks for spoken confirmation before executing. If the plan is unclear or unsupported, it answers normally instead. It does not create multi-step plans or arbitrary screen taps.
 - Accessibility typing is optional and disabled until you enable it in Android Settings. AI-planned typing also requires your spoken confirmation and only inserts text into the currently focused field. It does not read screen contents, click buttons, submit forms, or press Send/Search. You must review and submit text yourself.
 - Buddy does not silently send messages, place calls, access private media, make payments, operate banking apps, or bypass Android security. Sensitive actions require user interaction.
