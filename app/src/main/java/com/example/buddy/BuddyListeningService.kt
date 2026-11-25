@@ -95,14 +95,22 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }
         try { recognizer?.startListening(intent) } catch (_: Exception) { restarting = false; stopSelf() }
     }
 
     private fun handle(text: String) {
-        val s = text.lowercase(Locale.ROOT).trim()
-        if (s.isBlank() || stopping) return
+        val raw = text.lowercase(Locale.ROOT).trim()
+        if (raw.isBlank() || stopping) return
+        if (raw == "buddy" || raw == "बडी" || raw == "बड्डी") {
+            speak("जी, बताइए।")
+            return
+        }
+        // Accept the requested single-word wake name at the start of a command.
+        val s = raw.replace(Regex("^(buddy|बडी|बड्डी)[, ]*"), "").trim()
+        if (s.isBlank()) return
         val waiting = pendingAction
         if (waiting != null) {
             when {
