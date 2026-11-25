@@ -108,14 +108,14 @@ class MainActivity : Activity() {
                 if (endpoint.isNotBlank() && !endpoint.startsWith("https://", ignoreCase = true)) {
                     Toast.makeText(this@MainActivity, "Use a secure https:// endpoint.", Toast.LENGTH_LONG).show()
                 } else {
+                    if (!SecureKeyStore.set(this@MainActivity, key)) {
+                        Toast.makeText(this@MainActivity, "API key सुरक्षित रूप से save नहीं हुई। पुरानी settings नहीं बदलीं।", Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
                     prefs.edit().putString("endpoint", endpoint)
                         .putString("model", model)
                         .remove("api_key")
                         .putBoolean("memory_enabled", memoryCheck.isChecked).apply()
-                    if (!SecureKeyStore.set(this@MainActivity, key)) {
-                        Toast.makeText(this@MainActivity, "API key सुरक्षित रूप से save नहीं हुई। दोबारा कोशिश करें।", Toast.LENGTH_LONG).show()
-                        return@setOnClickListener
-                    }
                     Toast.makeText(this@MainActivity, "AI settings saved on this phone.", Toast.LENGTH_SHORT).show()
                 }
             }
