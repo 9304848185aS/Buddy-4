@@ -6,7 +6,8 @@ A Kotlin Android voice-control prototype. Tap **START LISTENING**, then speak a 
 - Stop listening: **रुक जा**, **stop listening**, or **stop**.
 - Time, date, and battery status.
 - Open YouTube, Chrome, Gmail, Play Store, Photos, Camera, Maps, Contacts, Messages, Phone dialer, Wi-Fi/Bluetooth settings, Android Settings, and Calculator.
-- Try opening other installed apps by saying their visible app name (for example, "open WhatsApp"). This depends on Android package visibility and the app's launcher entry.
+- Try opening other installed apps by saying their visible app name (for example, open WhatsApp). This uses Android launcher visibility; apps without a launcher entry may not be available.
+- Optional voice typing: enable ENABLE OPTIONAL TEXT TYPING in Buddy, then enable Buddy in Android Accessibility settings. Open the target app yourself, tap its text field so the cursor is visible, and say type [words], टाइप करो [शब्द], or लिखो [शब्द]. Buddy only inserts text into the currently focused editable field. Check the text and press Search or Send yourself.
 - Search the web by saying **search [your words]** or **सर्च [your words]**.
 - Set an alarm by saying a numeric time such as **alarm 7:30**; Buddy opens the system clock screen for your confirmation.
 - Basic Hindi greetings and assistant identity responses.
@@ -30,6 +31,7 @@ Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. Whe
 - Speech recognition availability, language support, and offline recognition depend on the phone's installed speech service. The app does not bundle an offline speech-recognition model.
 - You must open Buddy and tap **START LISTENING**. Android restricts background microphone starts and continuous listening; do not expect it to listen after force-stop, reboot, or reliably while locked. The current build does not implement an always-on “Buddy” wake word.
 - Online AI requires internet and a configured provider. AI text answers do not themselves execute phone actions.
+- Accessibility typing is optional and disabled until you enable it in Android Settings. It does not read screen contents, click buttons, submit forms, or press Send/Search. You must review and submit text yourself.
 - Buddy does not silently send messages, place calls, access private media, make payments, operate banking apps, or bypass Android security. Sensitive actions require user interaction.
 - Use **STOP** or say **रुक जा** to end microphone use.
 
