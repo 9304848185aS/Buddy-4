@@ -112,7 +112,6 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
     }
 
-
     private fun searchWeb(command: String) {
         val query = command.removePrefix("search").removePrefix("सर्च").trim()
         if (query.isBlank()) { speak("क्या search करना है?"); return }
@@ -144,7 +143,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             command.contains("नमस्ते") || command.contains("hello") || command == "hi" -> speak("नमस्ते, बताइए मैं क्या मदद करूँ?")
             command.contains("तुम कौन") || command.contains("who are you") -> speak("मैं Buddy हूँ, आपका फोन voice assistant।")
             command.contains("धन्यवाद") || command.contains("thank you") -> speak("आपका स्वागत है")
-            else -> speak("यह काम अभी मेरे commands में नहीं है। ऐप का नाम बोलकर खोलें या search command दें।")
+            else -> AiBrain.ask(this, command) { answer -> speak(answer) }
         }
     }
 
