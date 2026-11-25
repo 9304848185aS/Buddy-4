@@ -94,9 +94,9 @@ class MainActivity : Activity() {
         modelInput = field("Enter the model ID from your provider",
             prefs.getString("model", "").orEmpty())
         content.addView(modelInput)
-        content.addView(label("API key (stored only on this phone)"))
+        content.addView(label("API key (encrypted with Android Keystore)"))
         keyInput = field("Paste provider API key here",
-            prefs.getString("api_key", "").orEmpty(),
+            SecureKeyStore.get(this),
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
         content.addView(keyInput)
         content.addView(Button(this).apply {
@@ -109,8 +109,13 @@ class MainActivity : Activity() {
                     Toast.makeText(this@MainActivity, "Use a secure https:// endpoint.", Toast.LENGTH_LONG).show()
                 } else {
                     prefs.edit().putString("endpoint", endpoint)
-                        .putString("model", model).putString("api_key", key)
+                        .putString("model", model)
+                        .remove("api_key")
                         .putBoolean("memory_enabled", memoryCheck.isChecked).apply()
+                    if (!SecureKeyStore.set(this@MainActivity, key)) {
+                        Toast.makeText(this@MainActivity, "API key सुरक्षित रूप से save नहीं हुई। दोबारा कोशिश करें।", Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
                     Toast.makeText(this@MainActivity, "AI settings saved on this phone.", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -135,7 +140,7 @@ class MainActivity : Activity() {
             }
         })
         content.addView(TextView(this).apply {
-            text = "AI chat requires internet and a provider API key. Free quotas vary. Never share your key or commit it to GitHub. Voice commands for opening apps, settings, alarms and web search work without an AI key. Memory preference is saved when you tap SAVE AI SETTINGS."
+            text = "AI chat requires internet and a provider API key. The key is encrypted with Android Keystore on this phone; free quotas vary. Never share your key or commit it to GitHub. Voice commands for opening apps, settings, alarms and web search work without an AI key. Memory preference is saved when you tap SAVE AI SETTINGS."
             textSize = 13f
             setPadding(0, 12, 0, 16)
         })
