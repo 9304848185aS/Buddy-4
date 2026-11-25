@@ -39,7 +39,7 @@ class MainActivity : Activity() {
                 setText(value)
                 textSize = 15f
                 inputType = type
-                singleLine = true
+                setSingleLine(true)
             }
 
         content.addView(TextView(this).apply {
