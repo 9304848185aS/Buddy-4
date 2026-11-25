@@ -23,7 +23,7 @@ object AiBrain {
         val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val endpoint = prefs.getString("endpoint", "")?.trim().orEmpty()
         val model = prefs.getString("model", "")?.trim().orEmpty()
-        val apiKey = prefs.getString("api_key", "")?.trim().orEmpty()
+        val apiKey = SecureKeyStore.get(appContext).trim()
         val remember = prefs.getBoolean("memory_enabled", false)
 
         if (endpoint.isBlank() || model.isBlank() || apiKey.isBlank()) {
@@ -112,7 +112,7 @@ object AiBrain {
         val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val endpoint = prefs.getString("endpoint", "")?.trim().orEmpty()
         val model = prefs.getString("model", "")?.trim().orEmpty()
-        val apiKey = prefs.getString("api_key", "")?.trim().orEmpty()
+        val apiKey = SecureKeyStore.get(appContext).trim()
         if (endpoint.isBlank() || model.isBlank() || apiKey.isBlank() ||
             !endpoint.startsWith("https://", ignoreCase = true)) {
             main.post { reply(ActionPlan("NONE", "", "AI settings are not configured")) }
