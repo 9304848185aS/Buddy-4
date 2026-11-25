@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -20,6 +21,7 @@ class MainActivity : Activity() {
     private lateinit var endpointInput: EditText
     private lateinit var modelInput: EditText
     private lateinit var keyInput: EditText
+    private lateinit var memoryCheck: CheckBox
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,17 +88,37 @@ class MainActivity : Activity() {
                 val endpoint = endpointInput.text.toString().trim()
                 val model = modelInput.text.toString().trim()
                 val key = keyInput.text.toString().trim()
-                if (endpoint.isNotBlank() && !endpoint.startsWith("https://")) {
+                if (endpoint.isNotBlank() && !endpoint.startsWith("https://", ignoreCase = true)) {
                     Toast.makeText(this@MainActivity, "Use a secure https:// endpoint.", Toast.LENGTH_LONG).show()
                 } else {
                     prefs.edit().putString("endpoint", endpoint)
-                        .putString("model", model).putString("api_key", key).apply()
+                        .putString("model", model).putString("api_key", key)
+                        .putBoolean("memory_enabled", memoryCheck.isChecked).apply()
                     Toast.makeText(this@MainActivity, "AI settings saved on this phone.", Toast.LENGTH_SHORT).show()
                 }
             }
         })
+
+        content.addView(label("OPTIONAL CONVERSATION MEMORY"))
+        memoryCheck = CheckBox(this).apply {
+            text = "Remember recent AI chat on this phone"
+            isChecked = prefs.getBoolean("memory_enabled", false)
+        }
+        content.addView(memoryCheck)
         content.addView(TextView(this).apply {
-            text = "AI chat requires internet and a provider API key. Free quotas vary. Never share your key or commit it to GitHub. Voice commands for opening apps, settings, alarms and web search work without an AI key."
+            text = "Memory is OFF by default. If enabled, Buddy stores up to 5 recent exchanges locally on this phone and sends that context with your next AI question. Do not store passwords, payment details, or private information."
+            textSize = 13f
+            setPadding(0, 4, 0, 8)
+        })
+        content.addView(Button(this).apply {
+            text = "CLEAR AI CHAT MEMORY"
+            setOnClickListener {
+                AiBrain.clearHistory(this@MainActivity)
+                Toast.makeText(this@MainActivity, "Recent AI chat memory cleared.", Toast.LENGTH_SHORT).show()
+            }
+        })
+        content.addView(TextView(this).apply {
+            text = "AI chat requires internet and a provider API key. Free quotas vary. Never share your key or commit it to GitHub. Voice commands for opening apps, settings, alarms and web search work without an AI key. Memory preference is saved when you tap SAVE AI SETTINGS."
             textSize = 13f
             setPadding(0, 12, 0, 16)
         })
