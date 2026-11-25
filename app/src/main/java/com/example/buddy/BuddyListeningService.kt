@@ -31,6 +31,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var restarting = false
     private var stopping = false
     private var pauseListening = false
+    private var pendingAction: AiBrain.ActionPlan? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -102,6 +103,19 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private fun handle(text: String) {
         val s = text.lowercase(Locale.ROOT).trim()
         if (s.isBlank() || stopping) return
+        val waiting = pendingAction
+        if (waiting != null) {
+            when {
+                s == "हाँ" || s == "हां" || s.contains("कर दो") || s.contains("करो") ||
+                    s == "yes" || s == "confirm" || s == "haan" -> executePendingAction()
+                s.contains("नहीं") || s.contains("मत करो") || s == "no" || s == "cancel" -> {
+                    pendingAction = null
+                    speak("ठीक है, action रद्द कर दिया।")
+                }
+                else -> speak("इस action के लिए हाँ या नहीं बोलिए।")
+            }
+            return
+        }
         when {
             s.contains("रुक") || s.contains("बंद सुनना") || s.contains("stop listening") || s == "stop" -> {
                 stopping = true
@@ -216,10 +230,36 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             command.contains("नमस्ते") || command.contains("hello") || command == "hi" -> speak("नमस्ते, बताइए मैं क्या मदद करूँ?")
             command.contains("तुम कौन") || command.contains("who are you") -> speak("मैं Buddy हूँ, आपका फोन voice assistant।")
             command.contains("धन्यवाद") || command.contains("thank you") -> speak("आपका स्वागत है")
-            else -> {
-                pauseListening = true
+            else -> requestAiPlannedAction(command)
+        }
+    }
+
+    private fun requestAiPlannedAction(command: String) {
+        pauseListening = true
+        AiBrain.planAction(this, command) { plan ->
+            if (plan.action == "NONE") {
                 AiBrain.ask(this, command) { answer -> speak(answer) }
+                return@planAction
             }
+            pendingAction = plan
+            val description = when (plan.action) {
+                "OPEN_APP" -> "${plan.value} ऐप खोलना"
+                "TYPE_TEXT" -> "चुने हुए text box में ${plan.value} लिखना"
+                "WEB_SEARCH" -> "${plan.value} को वेब पर search करना"
+                else -> "यह काम करना"
+            }
+            speak("मैं $description चाहता हूँ। करने के लिए हाँ बोलिए, रद्द करने के लिए नहीं।")
+        }
+    }
+
+    private fun executePendingAction() {
+        val plan = pendingAction ?: return
+        pendingAction = null
+        when (plan.action) {
+            "OPEN_APP" -> openNamedAppOrReply(plan.value)
+            "TYPE_TEXT" -> typeIntoFocusedField("type ${plan.value}")
+            "WEB_SEARCH" -> searchWeb("search ${plan.value}")
+            else -> speak("यह action उपलब्ध नहीं है।")
         }
     }
 
