@@ -149,20 +149,41 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun openNamedAppOrReply(command: String) {
-        val cleaned = command.replace("open ", "").replace("खोलो", "").trim()
-        if (cleaned.isNotBlank()) {
+        val normalized = command.lowercase(Locale.ROOT)
+            .replace("please", "")
+            .replace("open", "")
+            .replace("launch", "")
+            .replace("खोलकर", "")
+            .replace("खोलना", "")
+            .replace("खोलो", "")
+            .replace("खोल", "")
+            .replace("चालू करो", "")
+            .replace("चालू कर", "")
+            .replace("ऐप", "")
+            .replace("app", "")
+            .replace("buddy", "")
+            .trim()
+            .replace(Regex("\\s+"), " ")
+
+        if (normalized.isNotBlank()) {
             val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             val matches = packageManager.queryIntentActivities(launcher, 0)
             val match = matches.firstOrNull { info ->
+                info.loadLabel(packageManager).toString().trim().equals(normalized, ignoreCase = true)
+            } ?: matches.firstOrNull { info ->
                 val label = info.loadLabel(packageManager).toString().lowercase(Locale.ROOT)
-                label == cleaned || label.contains(cleaned)
+                label.contains(normalized) || normalized.contains(label)
             }
             if (match != null) {
                 val launch = packageManager.getLaunchIntentForPackage(match.activityInfo.packageName)
                 if (launch != null) {
-                    launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(launch)
-                    speak("ऐप खोल रहा हूँ")
+                    try {
+                        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(launch)
+                        speak(infoLabel(match.activityInfo.packageName))
+                    } catch (_: Exception) {
+                        speak("यह ऐप अभी नहीं खुल पाया")
+                    }
                     return
                 }
             }
@@ -176,6 +197,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 AiBrain.ask(this, command) { answer -> speak(answer) }
             }
         }
+    }
+
+    private fun infoLabel(packageName: String): String {
+        val label = try {
+            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+            packageManager.getApplicationLabel(appInfo).toString()
+        } catch (_: Exception) { "ऐप" }
+        return "$label खोल रहा हूँ"
     }
 
     private fun setAlarm(command: String) {
