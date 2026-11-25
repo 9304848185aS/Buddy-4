@@ -143,7 +143,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 speak("बैटरी " + bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + " प्रतिशत है")
             }
             s.startsWith("type ") || s.startsWith("टाइप करो ") ||
-                s.startsWith("लिखो ") || s.startsWith("लिख दो ") -> typeIntoFocusedField(text.trim())
+                s.startsWith("लिखो ") || s.startsWith("लिख दो ") -> typeIntoFocusedField(s)
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
             s.contains("वाईफाई") || s.contains("wi-fi") || s.contains("wifi") -> openSettings(Settings.Panel.ACTION_WIFI, "वाई-फाई सेटिंग")
             s.contains("ब्लूटूथ") || s.contains("bluetooth") -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS, "ब्लूटूथ सेटिंग")
@@ -195,7 +195,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         else openIntent(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + Uri.encode(query))), "सर्च")
     }
 
-    private fun openNamedAppOrReply(command: String) {
+    private fun launchNamedApp(command: String): Boolean {
         val normalized = command.lowercase(Locale.ROOT)
             .replace("please", "")
             .replace("open", "")
@@ -212,29 +212,30 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             .trim()
             .replace(Regex("\\s+"), " ")
 
-        if (normalized.isNotBlank()) {
-            val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-            val matches = packageManager.queryIntentActivities(launcher, 0)
-            val match = matches.firstOrNull { info ->
-                info.loadLabel(packageManager).toString().trim().equals(normalized, ignoreCase = true)
-            } ?: matches.firstOrNull { info ->
-                val label = info.loadLabel(packageManager).toString().lowercase(Locale.ROOT)
-                label.contains(normalized) || normalized.contains(label)
-            }
-            if (match != null) {
-                val launch = packageManager.getLaunchIntentForPackage(match.activityInfo.packageName)
-                if (launch != null) {
-                    try {
-                        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(launch)
-                        speak(infoLabel(match.activityInfo.packageName))
-                    } catch (_: Exception) {
-                        speak("यह ऐप अभी नहीं खुल पाया")
-                    }
-                    return
-                }
-            }
+        if (normalized.isBlank()) return false
+        val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val matches = packageManager.queryIntentActivities(launcher, 0)
+        val match = matches.firstOrNull { info ->
+            info.loadLabel(packageManager).toString().trim().equals(normalized, ignoreCase = true)
+        } ?: matches.firstOrNull { info ->
+            val label = info.loadLabel(packageManager).toString().lowercase(Locale.ROOT)
+            label.contains(normalized) || normalized.contains(label)
+        } ?: return false
+
+        val launch = packageManager.getLaunchIntentForPackage(match.activityInfo.packageName) ?: return false
+        return try {
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(launch)
+            speak(infoLabel(match.activityInfo.packageName))
+            true
+        } catch (_: Exception) {
+            speak("यह ऐप अभी नहीं खुल पाया")
+            true
         }
+    }
+
+    private fun openNamedAppOrReply(command: String) {
+        if (launchNamedApp(command)) return
         when {
             command.contains("नमस्ते") || command.contains("hello") || command == "hi" -> speak("नमस्ते, बताइए मैं क्या मदद करूँ?")
             command.contains("तुम कौन") || command.contains("who are you") -> speak("मैं Buddy हूँ, आपका फोन voice assistant।")
@@ -265,7 +266,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         val plan = pendingAction ?: return
         pendingAction = null
         when (plan.action) {
-            "OPEN_APP" -> openNamedAppOrReply(plan.value)
+            "OPEN_APP" -> if (!launchNamedApp(plan.value)) speak("${plan.value} ऐप नहीं मिला।")
             "TYPE_TEXT" -> typeIntoFocusedField("type ${plan.value}")
             "WEB_SEARCH" -> searchWeb("search ${plan.value}")
             else -> speak("यह action उपलब्ध नहीं है।")
