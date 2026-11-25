@@ -106,12 +106,12 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         val waiting = pendingAction
         if (waiting != null) {
             when {
-                s == "हाँ" || s == "हां" || s.contains("कर दो") || s.contains("करो") ||
-                    s == "yes" || s == "confirm" || s == "haan" -> executePendingAction()
                 s.contains("नहीं") || s.contains("मत करो") || s == "no" || s == "cancel" -> {
                     pendingAction = null
                     speak("ठीक है, action रद्द कर दिया।")
                 }
+                s == "हाँ" || s == "हां" || s.contains("कर दो") ||
+                    s == "yes" || s == "confirm" || s == "haan" -> executePendingAction()
                 else -> speak("इस action के लिए हाँ या नहीं बोलिए।")
             }
             return
@@ -135,7 +135,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 speak("बैटरी " + bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + " प्रतिशत है")
             }
             s.startsWith("type ") || s.startsWith("टाइप करो ") ||
-                s.startsWith("लिखो ") || s.startsWith("लिख दो ") -> typeIntoFocusedField(s)
+                s.startsWith("लिखो ") || s.startsWith("लिख दो ") -> typeIntoFocusedField(text.trim())
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
             s.contains("वाईफाई") || s.contains("wi-fi") || s.contains("wifi") -> openSettings(Settings.Panel.ACTION_WIFI, "वाई-फाई सेटिंग")
             s.contains("ब्लूटूथ") || s.contains("bluetooth") -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS, "ब्लूटूथ सेटिंग")
@@ -157,11 +157,12 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun typeIntoFocusedField(command: String) {
+        val normalized = command.lowercase(Locale.ROOT)
         val text = when {
-            command.startsWith("type ") -> command.removePrefix("type ").trim()
-            command.startsWith("टाइप करो ") -> command.removePrefix("टाइप करो ").trim()
-            command.startsWith("लिख दो ") -> command.removePrefix("लिख दो ").trim()
-            else -> command.removePrefix("लिखो ").trim()
+            normalized.startsWith("type ") -> command.substringAfter(" ").trim()
+            normalized.startsWith("टाइप करो ") -> command.substring("टाइप करो ".length).trim()
+            normalized.startsWith("लिख दो ") -> command.substring("लिख दो ".length).trim()
+            else -> command.substring("लिखो ".length).trim()
         }
         if (text.isBlank()) {
             speak("जो लिखवाना है, वह बोलिए।")
