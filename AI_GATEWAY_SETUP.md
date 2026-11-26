@@ -31,4 +31,4 @@ Buddy's existing single-provider settings can also connect directly to any provi
 - Never commit provider keys or gateway keys to this repository, screenshots, or chat messages.
 - Use a private gateway with authentication and HTTPS. A public unauthenticated proxy can expose your account and incur unexpected usage.
 - Buddy sends user prompts to the selected AI service when online AI is configured. Keep sensitive personal, payment, banking, password, and private-media information out of prompts.
-- Offline local commands continue to work without a configured AI gateway. Online AI requires internet access and a reachable HTTPS endpoint.
+- Built-in commands for supported phone actions remain available without configuring an AI gateway, provided Android's speech-recognition service is working. Open-ended AI answers and AI action planning require internet access and a reachable HTTPS endpoint.
