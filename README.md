@@ -19,6 +19,8 @@ A Kotlin Android voice-control prototype. Tap **START LISTENING**, then say **Bu
 ## Online AI setup
 Open Buddy's **AI Brain Settings** and enter an HTTPS OpenAI-compatible Chat Completions endpoint, the provider's exact model ID, and an API key. Save the settings. The API key is encrypted on-device using Android Keystore; older plaintext keys are migrated when possible. The app does not include a free or unlimited AI service; provider quotas and pricing can change. Never put an API key in this public repository or share it in a chat.
 
+For an optional multi-provider gateway (such as OmniRoute), see [AI_GATEWAY_SETUP.md](AI_GATEWAY_SETUP.md). The gateway must be hosted on a trusted HTTPS address; Buddy does not run the gateway inside the APK and does not yet perform local multi-provider fallback.
+
 ## Optional conversation memory
 Memory is **OFF by default**. If enabled and saved in settings, Buddy stores up to five recent user/assistant exchanges in local app preferences and sends that context with later AI questions. Use **CLEAR AI CHAT MEMORY** to clear the saved exchanges. Do not store passwords, payment information, or other sensitive details. This local preference storage is not encrypted storage.
 
