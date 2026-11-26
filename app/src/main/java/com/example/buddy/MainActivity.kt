@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
@@ -27,9 +29,15 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val prefs = getSharedPreferences("buddy_ai", MODE_PRIVATE)
+        fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+        fun rounded(color: Int, radius: Int) = GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+        }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(28, 28, 28, 28)
+            setPadding(dp(22), dp(24), dp(22), dp(28))
+            setBackgroundColor(Color.rgb(10, 17, 32))
         }
         fun label(value: String) = TextView(this).apply {
             text = value
@@ -48,13 +56,25 @@ class MainActivity : Activity() {
         content.addView(TextView(this).apply {
             text = "BUDDY"
             textSize = 34f
+            setTextColor(Color.rgb(111, 220, 255))
             gravity = Gravity.CENTER
+            setPadding(0, dp(10), 0, dp(4))
+        })
+        content.addView(TextView(this).apply {
+            text = "YOUR VOICE • YOUR CONTROL"
+            textSize = 11f
+            letterSpacing = 0.18f
+            setTextColor(Color.rgb(155, 177, 204))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(18))
         })
         status = TextView(this).apply {
             text = "Phone assistant ready. Start listening and speak a command."
             textSize = 16f
             gravity = Gravity.CENTER
-            setPadding(0, 12, 0, 12)
+            setTextColor(Color.WHITE)
+            setPadding(dp(14), dp(16), dp(14), dp(16))
+            background = rounded(Color.rgb(25, 39, 61), 16)
         }
         content.addView(status)
         content.addView(Button(this).apply {
@@ -169,7 +189,31 @@ class MainActivity : Activity() {
             textSize = 13f
             setPadding(0, 12, 0, 16)
         })
-        val scroll = ScrollView(this).apply { addView(content) }
+        // Apply a consistent high-contrast dark interface to every control.
+        for (index in 0 until content.childCount) {
+            when (val child = content.getChildAt(index)) {
+                is Button -> {
+                    child.background = rounded(Color.rgb(24, 111, 158), 13)
+                    child.setTextColor(Color.WHITE)
+                    child.textSize = 14f
+                    child.setPadding(dp(14), dp(13), dp(14), dp(13))
+                    child.isAllCaps = false
+                }
+                is TextView -> {
+                    if (child !== status && child.textColors.defaultColor == Color.BLACK) {
+                        child.setTextColor(Color.rgb(218, 229, 243))
+                    }
+                }
+                is EditText -> {
+                    child.setTextColor(Color.WHITE)
+                    child.setHintTextColor(Color.rgb(139, 157, 180))
+                }
+            }
+        }
+        val scroll = ScrollView(this).apply {
+            setBackgroundColor(Color.rgb(10, 17, 32))
+            addView(content)
+        }
         setContentView(scroll)
     }
 
