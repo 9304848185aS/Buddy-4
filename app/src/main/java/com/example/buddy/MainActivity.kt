@@ -70,18 +70,18 @@ class MainActivity : Activity() {
         })
 
         content.addView(Button(this).apply {
-            text = "ENABLE OPTIONAL TEXT TYPING"
+            text = "ENABLE SCREEN READING & TEXT TYPING"
             setOnClickListener {
                 Toast.makeText(
                     this@MainActivity,
-                    "Android Accessibility settings will open. Enable Buddy only if you want voice typing into the field you have focused.",
+                    "Android Accessibility settings will open. Enable Buddy only if you want on-demand screen reading and voice typing into the field you have focused.",
                     Toast.LENGTH_LONG
                 ).show()
                 startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
         })
         content.addView(TextView(this).apply {
-            text = "Typing permission is optional. Buddy can only place your spoken text into the text field you have already focused. It does not read screen contents, tap buttons, submit forms, or send messages."
+            text = "Optional Accessibility access: when you explicitly ask Buddy what is on the screen, it reads visible text and descriptions from the current app. Password fields are skipped. It can also type into the text field you focused. It does not automatically send messages, submit forms, or make payments."
             textSize = 13f
             setPadding(0, 4, 0, 12)
         })
