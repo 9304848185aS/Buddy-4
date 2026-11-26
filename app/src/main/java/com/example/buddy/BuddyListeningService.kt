@@ -3,6 +3,7 @@ package com.example.buddy
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.net.Uri
@@ -49,12 +50,23 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onCreate() {
         super.onCreate()
         createChannel()
+        val stopIntent = Intent(this, BuddyListeningService::class.java).setAction(ACTION_STOP)
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            102,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = if (Build.VERSION.SDK_INT >= 26)
             Notification.Builder(this, "buddy_listening").setContentTitle("Buddy is listening")
-                .setContentText("Voice control is active. Say stop to end listening.")
-                .setSmallIcon(android.R.drawable.ic_btn_speak_now).build()
+                .setContentText("Voice control is active. Say stop or use the STOP button.")
+                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .addAction(android.R.drawable.ic_media_pause, "STOP", stopPendingIntent)
+                .build()
         else Notification.Builder(this).setContentTitle("Buddy is listening")
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now).build()
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .addAction(android.R.drawable.ic_media_pause, "STOP", stopPendingIntent)
+            .build()
         startForeground(101, notification)
         tts = TextToSpeech(this, this)
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
@@ -471,7 +483,15 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onPartialResults(partialResults: Bundle?) { }
     override fun onEvent(eventType: Int, params: Bundle?) { }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            clearPendingAction()
+            afterSpeech = null
+            stopping = true
+            stopSelf()
+        }
+        return START_NOT_STICKY
+    }
     override fun onDestroy() {
         // Never leave a delayed confirmation alive after the listening service stops.
         clearPendingAction()
@@ -487,5 +507,9 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         tts = null
         super.onDestroy()
     }
+    companion object {
+        private const val ACTION_STOP = "com.example.buddy.action.STOP_LISTENING"
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 }
