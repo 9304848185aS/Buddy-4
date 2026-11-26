@@ -55,7 +55,9 @@ object SecureKeyStore {
     fun set(context: Context, value: String): Boolean {
         val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (value.isBlank()) {
-            prefs.edit().remove(CIPHER_TEXT).remove(IV).apply()
+            prefs.edit().remove(CIPHER_TEXT).remove(IV).commit()
+            context.applicationContext.getSharedPreferences("buddy_ai", Context.MODE_PRIVATE)
+                .edit().remove("api_key").commit()
             return true
         }
         return try {
