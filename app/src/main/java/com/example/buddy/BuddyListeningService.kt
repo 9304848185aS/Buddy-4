@@ -31,14 +31,16 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var restarting = false
     private var stopping = false
     private var pauseListening = false
-    private var pendingAction: AiBrain.ActionPlan? = null
+    private var pendingActions: List<AiBrain.ActionStep> = emptyList()
+    private var pendingActionIndex = 0
     private val actionTimeoutHandler = Handler(Looper.getMainLooper())
     private var actionTimeout: Runnable? = null
 
     private fun clearPendingAction() {
         actionTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
         actionTimeout = null
-        pendingAction = null
+        pendingActions = emptyList()
+        pendingActionIndex = 0
     }
 
     override fun onCreate() {
@@ -119,7 +121,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         // Accept the requested single-word wake name at the start of a command.
         val s = raw.replace(Regex("^(buddy|बडी|बड्डी)[, ]*"), "").trim()
         if (s.isBlank()) return
-        val waiting = pendingAction
+        val waiting = pendingActions.getOrNull(pendingActionIndex)
         if (waiting != null) {
             when {
                 s.contains("नहीं") || s.contains("मत करो") || s == "no" || s == "cancel" -> {
@@ -255,39 +257,58 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private fun requestAiPlannedAction(command: String) {
         pauseListening = true
         AiBrain.planAction(this, command) { plan ->
-            if (plan.action == "NONE") {
+            if (plan.steps.isEmpty()) {
                 AiBrain.ask(this, command) { answer -> speak(answer) }
                 return@planAction
             }
             clearPendingAction()
-            pendingAction = plan
-            val timeout = Runnable {
-                if (pendingAction === plan) {
-                    pendingAction = null
-                    actionTimeout = null
-                    speak("समय पूरा हुआ। सुरक्षा के लिए action रद्द कर दिया।")
-                }
-            }
-            actionTimeout = timeout
-            actionTimeoutHandler.postDelayed(timeout, 15000L)
-            val description = when (plan.action) {
-                "OPEN_APP" -> "${plan.value} ऐप खोलना"
-                "TYPE_TEXT" -> "चुने हुए text box में ${plan.value} लिखना"
-                "WEB_SEARCH" -> "${plan.value} को वेब पर search करना"
-                else -> "यह काम करना"
-            }
-            speak("मैं $description चाहता हूँ। करने के लिए हाँ बोलिए, रद्द करने के लिए नहीं।")
+            pendingActions = plan.steps
+            pendingActionIndex = 0
+            announcePendingAction()
         }
     }
 
+    private fun announcePendingAction() {
+        val step = pendingActions.getOrNull(pendingActionIndex) ?: run {
+            clearPendingAction()
+            speak("सुरक्षित steps पूरे हो गए।")
+            return
+        }
+        val description = when (step.action) {
+            "OPEN_APP" -> "${step.value} ऐप खोलना"
+            "TYPE_TEXT" -> "चुने हुए text box में ${step.value} लिखना"
+            "WEB_SEARCH" -> "${step.value} को वेब पर search करना"
+            else -> "यह काम करना"
+        }
+        val stepNumber = pendingActionIndex + 1
+        val total = pendingActions.size
+        val timeout = Runnable {
+            if (pendingActions.getOrNull(pendingActionIndex) === step) {
+                clearPendingAction()
+                speak("समय पूरा हुआ। सुरक्षा के लिए बाकी actions रद्द कर दिए।")
+            }
+        }
+        actionTimeout = timeout
+        actionTimeoutHandler.postDelayed(timeout, 15000L)
+        speak("Step $stepNumber of $total: $description. करने के लिए हाँ बोलिए, रद्द करने के लिए नहीं।")
+    }
+
     private fun executePendingAction() {
-        val plan = pendingAction ?: return
-        clearPendingAction()
-        when (plan.action) {
-            "OPEN_APP" -> if (!launchNamedApp(plan.value)) speak("${plan.value} ऐप नहीं मिला।")
-            "TYPE_TEXT" -> typeIntoFocusedField("type ${plan.value}")
-            "WEB_SEARCH" -> searchWeb("search ${plan.value}")
+        val step = pendingActions.getOrNull(pendingActionIndex) ?: return
+        actionTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
+        actionTimeout = null
+        pendingActionIndex += 1
+        when (step.action) {
+            "OPEN_APP" -> if (!launchNamedApp(step.value)) speak("${step.value} ऐप नहीं मिला।")
+            "TYPE_TEXT" -> typeIntoFocusedField("type ${step.value}")
+            "WEB_SEARCH" -> searchWeb("search ${step.value}")
             else -> speak("यह action उपलब्ध नहीं है।")
+        }
+        if (pendingActionIndex < pendingActions.size) {
+            // Each subsequent step requires a fresh spoken confirmation.
+            actionTimeoutHandler.postDelayed({ announcePendingAction() }, 1200L)
+        } else {
+            clearPendingAction()
         }
     }
 
