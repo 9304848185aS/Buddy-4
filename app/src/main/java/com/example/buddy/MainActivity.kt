@@ -86,6 +86,18 @@ class MainActivity : Activity() {
             setPadding(0, 4, 0, 12)
         })
 
+        content.addView(Button(this).apply {
+            text = "ENABLE NOTIFICATION READING"
+            setOnClickListener {
+                startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
+        })
+        content.addView(TextView(this).apply {
+            text = "Optional: allow Buddy to read recent notification previews when you explicitly ask, for example: Buddy, who messaged me? Android may show private notification content. Previews stay in app memory and are not sent to the AI service."
+            textSize = 13f
+            setPadding(0, 4, 0, 12)
+        })
+
         content.addView(label("AI BRAIN SETTINGS (OpenAI-compatible API)"))
         content.addView(label("API endpoint"))
         endpointInput = field("https://api.groq.com/openai/v1/chat/completions",
