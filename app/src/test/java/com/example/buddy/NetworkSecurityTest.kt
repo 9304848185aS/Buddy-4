@@ -21,8 +21,12 @@ class NetworkSecurityTest {
         assertFalse(NetworkSecurity.isSafeHttpsEndpoint("https://example.com:8443/api"))
     }
 
-    @Test fun acceptsStandardHttpsHost() {
-        assertTrue(NetworkSecurity.isSafeHttpsEndpoint("https://example.com/v1/chat/completions"))
+    @Test fun acceptsTrustedProviderHttpsHost() {
+        assertTrue(NetworkSecurity.isSafeHttpsEndpoint("https://api.groq.com/openai/v1/chat/completions"))
+    }
+
+    @Test fun rejectsUnlistedHttpsHosts() {
+        assertFalse(NetworkSecurity.isSafeHttpsEndpoint("https://example.com/v1/chat/completions"))
     }
 
     @Test fun responseReaderHonoursByteLimit() {
