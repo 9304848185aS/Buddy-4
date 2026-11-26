@@ -16,6 +16,11 @@ object ActionPlanParser {
             val root = JSONObject(raw.substring(start, end + 1))
             if (root.keys().asSequence().toSet() != setOf("steps", "reason")) return emptyList()
 
+            val reason = root.getString("reason").trim()
+            if (reason.isBlank() || reason.length > 120 || reason.any { it.isISOControl() }) {
+                return emptyList()
+            }
+
             val steps = root.optJSONArray("steps") ?: return emptyList()
             if (steps.length() !in 1..3) return emptyList()
 
@@ -24,8 +29,8 @@ object ActionPlanParser {
                 val item = steps.optJSONObject(index) ?: return emptyList()
                 if (item.keys().asSequence().toSet() != setOf("action", "value")) return emptyList()
 
-                val action = item.optString("action").uppercase(Locale.ROOT)
-                val value = item.optString("value").trim()
+                val action = item.getString("action").uppercase(Locale.ROOT)
+                val value = item.getString("value").trim()
                 if (action !in ALLOWED_ACTIONS || value.isBlank() || value.length > 180 ||
                     value.any { it.isISOControl() }) {
                     return emptyList()
