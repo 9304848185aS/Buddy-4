@@ -138,16 +138,16 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun handle(text: String) {
-        val raw = text.lowercase(Locale.ROOT).trim()
+        val wake = VoiceCommandMatcher.splitWakeWord(text)
+        val raw = VoiceCommandMatcher.normalize(text)
         if (raw.isBlank() || stopping) return
 
         // Require the chosen wake name before acting. A standalone wake word
         // opens a short command window; "Buddy, open YouTube" works in one phrase.
-        val wakeMatch = Regex("^(buddy|बडी|बड्डी)(?:[, ]+|$)").find(raw)
-        val hasWakePrefix = wakeMatch != null
-        val command = if (hasWakePrefix) raw.removeRange(wakeMatch!!.range).trim() else raw
+        val hasWakePrefix = wake.recognized
+        val command = if (hasWakePrefix) wake.command else raw
 
-        if (hasWakePrefix && command.isBlank()) {
+        if (hasWakePrefix && wake.wakeOnly) {
             wakeArmed = true
             wakeTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
             val timeout = Runnable { wakeArmed = false; wakeTimeout = null }
@@ -161,7 +161,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         wakeTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
         wakeTimeout = null
         val s = command.ifBlank { raw }
-        if (s.contains("रुक") || s.contains("बंद सुनना") || s.contains("stop listening") || s == "stop") {
+        if (VoiceCommandMatcher.isStopCommand(s)) {
             clearPendingAction()
             afterSpeech = null
             stopping = true
@@ -172,18 +172,17 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         val waiting = pendingActions.getOrNull(pendingActionIndex)
         if (waiting != null) {
             when {
-                s.contains("नहीं") || s.contains("मत करो") || s == "no" || s == "cancel" -> {
+                VoiceCommandMatcher.isCancellation(s) -> {
                     clearPendingAction()
                     speak("ठीक है, action रद्द कर दिया।")
                 }
-                s == "हाँ" || s == "हां" || s.contains("कर दो") ||
-                    s == "yes" || s == "confirm" || s == "haan" -> executePendingAction()
+                VoiceCommandMatcher.isConfirmation(s) -> executePendingAction()
                 else -> speak("इस action के लिए हाँ या नहीं बोलिए।")
             }
             return
         }
         when {
-            s.contains("रुक") || s.contains("बंद सुनना") || s.contains("stop listening") || s == "stop" -> {
+            VoiceCommandMatcher.isStopCommand(s) -> {
                 stopping = true
                 speak("ठीक है, सुनना बंद कर रहा हूँ")
                 Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1500)
