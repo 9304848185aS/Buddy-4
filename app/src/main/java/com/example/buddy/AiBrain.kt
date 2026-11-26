@@ -159,28 +159,15 @@ object AiBrain {
                     val response = connection.inputStream.use { NetworkSecurity.readUtf8Limited(it, 64 * 1024) }
                     val content = JSONObject(response).optJSONArray("choices")
                         ?.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty()
-                    val startJson = content.indexOf('{')
-                    val endJson = content.lastIndexOf('}')
-                    if (startJson >= 0 && endJson > startJson) {
-                        val json = JSONObject(content.substring(startJson, endJson + 1))
-                        val array = json.optJSONArray("steps") ?: JSONArray()
-                        val safeSteps = mutableListOf<ActionStep>()
-                        if (array.length() in 1..3) {
-                            for (i in 0 until array.length()) {
-                                val item = array.optJSONObject(i) ?: break
-                                val action = item.optString("action").uppercase(Locale.ROOT)
-                                val value = item.optString("value").trim()
-                                if (action !in setOf("OPEN_APP", "TYPE_TEXT", "WEB_SEARCH") ||
-                                    value.isBlank() || value.length > 180) {
-                                    safeSteps.clear()
-                                    break
-                                }
-                                safeSteps.add(ActionStep(action, value))
-                            }
-                        }
-                        if (safeSteps.isNotEmpty() && safeSteps.size == array.length()) {
-                            plan = ActionPlan(safeSteps, json.optString("reason").take(120))
-                        }
+                    val parsedSteps = ActionPlanParser.parse(content)
+                    if (parsedSteps.isNotEmpty()) {
+                        val startJson = content.indexOf('{')
+                        val endJson = content.lastIndexOf('}')
+                        val reason = if (startJson >= 0 && endJson > startJson) {
+                            try { JSONObject(content.substring(startJson, endJson + 1)).optString("reason").take(120) }
+                            catch (_: Exception) { "" }
+                        } else ""
+                        plan = ActionPlan(parsedSteps, reason)
                     }
                 }
             } catch (_: Exception) {
