@@ -1,6 +1,6 @@
 # Buddy Android Voice Assistant
 
-A Kotlin Android voice-control prototype. Tap **START LISTENING**, then say **Buddy** to get its attention or speak a command directly.
+A Kotlin Android voice-control prototype. Tap **START LISTENING**, then say **Buddy** before each command. You can also say **Buddy, open YouTube** in one phrase.
 
 ## Current voice commands
 - Stop listening: **रुक जा**, **stop listening**, or **stop**.
@@ -32,7 +32,7 @@ Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. Whe
 ## Limitations — read before use
 - Offline capability currently means only local command handling and Android intents. There is no bundled offline Qwen/LLM model.
 - Buddy prefers Android's on-device speech recognizer when the phone exposes one; otherwise it uses the system recognizer with offline preference. Actual offline recognition and language support depend on the installed speech service and language pack. The app does not bundle its own speech-recognition model.
-- You must open Buddy and tap **START LISTENING** first. While that foreground listening session is active, saying **Buddy** gets its attention; this is not an always-on hotword engine. Android restricts background microphone starts and continuous listening; do not expect it to listen after force-stop, reboot, or reliably while locked.
+- You must open Buddy and tap **START LISTENING** first. Commands are ignored unless they begin with **Buddy** (or **बडी**); saying only **Buddy** opens an 8-second command window. This is wake-word gating on Android speech recognition, not a dedicated always-on hotword engine. The microphone remains active only during the visible foreground listening session. Android restricts background microphone starts and continuous listening; do not expect it to listen after force-stop, reboot, or reliably while locked.
 - Online AI planning requires internet and a configured provider. The AI action planner is restricted to at most three safe steps: OPEN_APP, TYPE_TEXT in the already-focused field, or WEB_SEARCH. Buddy asks for separate spoken confirmation before every step; an unconfirmed step automatically expires after 15 seconds and cancels the remaining steps. If the plan is unclear or unsupported, it answers normally instead. It does not perform arbitrary screen taps.
 - Accessibility typing is optional and disabled until you enable it in Android Settings. AI-planned typing also requires your spoken confirmation and only inserts text into the currently focused field. It does not read screen contents, click buttons, submit forms, or press Send/Search. You must review and submit text yourself.
 - Buddy does not silently send messages, place calls, access private media, make payments, operate banking apps, or bypass Android security. Sensitive actions require user interaction.
@@ -42,7 +42,7 @@ Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. Whe
 After installing the latest successful debug APK:
 1. Open Buddy and grant microphone permission. Grant notification permission when Android asks.
 2. Tap **START LISTENING** and confirm the ongoing Buddy listening notification appears.
-3. Say **Buddy**, then try **time**, **date**, **battery**, **open YouTube**, and **रुक जा**.
+3. Say **Buddy**, then within 8 seconds say **time**; for a one-phrase command try **Buddy, open YouTube**. Test **Buddy, battery** and **Buddy, रुक जा** as well.
 4. Start listening again. For voice typing, enable Buddy only if you want this optional feature, open a notes app, focus its text field, and say **टाइप करो नमस्ते**. Verify the text appears; submit it yourself.
 5. Test online AI only after configuring your own provider endpoint, model, and API key. Try a harmless question first. For an AI-proposed supported action, test both **हाँ** and **नहीं**; if you do not answer within 15 seconds, it should cancel.
 6. Tap **STOP** in Buddy or in the listening notification and confirm the notification disappears.
