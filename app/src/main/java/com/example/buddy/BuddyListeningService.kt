@@ -28,6 +28,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var recognizer: SpeechRecognizer? = null
     private var tts: TextToSpeech? = null
     private var ready = false
+    private var pendingSpeech: String? = null
     private var restarting = false
     private var stopping = false
     private var pauseListening = false
@@ -79,7 +80,12 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onInit(status: Int) {
         ready = status == TextToSpeech.SUCCESS
         if (ready) {
-            tts?.language = Locale("hi", "IN")
+            val engine = tts
+            val hindiStatus = engine?.setLanguage(Locale("hi", "IN")) ?: TextToSpeech.ERROR
+            if (hindiStatus == TextToSpeech.LANG_MISSING_DATA ||
+                hindiStatus == TextToSpeech.LANG_NOT_SUPPORTED) {
+                engine?.language = Locale.getDefault()
+            }
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) { }
                 override fun onDone(utteranceId: String?) {
@@ -104,6 +110,13 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                     }
                 }
             })
+            val queued = pendingSpeech
+            pendingSpeech = null
+            if (!queued.isNullOrBlank()) speak(queued)
+        } else {
+            pendingSpeech = null
+            pauseListening = false
+            if (!stopping) listen()
         }
     }
 
@@ -377,13 +390,18 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun speak(message: String) {
-        if (ready) {
+        if (!ready || tts == null) {
+            // Speech recognition can return a command before TextToSpeech finishes
+            // initializing. Queue the reply instead of silently dropping it.
+            pendingSpeech = message
             pauseListening = true
-            val result = tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "buddy_reply")
-            if (result == TextToSpeech.ERROR) {
-                pauseListening = false
-                if (!stopping) listen()
-            }
+            return
+        }
+        pauseListening = true
+        val result = tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "buddy_reply")
+        if (result == TextToSpeech.ERROR) {
+            pauseListening = false
+            if (!stopping) listen()
         }
     }
 
