@@ -37,6 +37,8 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var pauseListening = false
     private var pendingActions: List<AiBrain.ActionStep> = emptyList()
     private var pendingActionIndex = 0
+    private var wakeArmed = false
+    private var wakeTimeout: Runnable? = null
     private val actionTimeoutHandler = Handler(Looper.getMainLooper())
     private var actionTimeout: Runnable? = null
 
@@ -144,13 +146,27 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private fun handle(text: String) {
         val raw = text.lowercase(Locale.ROOT).trim()
         if (raw.isBlank() || stopping) return
-        if (raw == "buddy" || raw == "बडी" || raw == "बड्डी") {
+
+        // Require the chosen wake name before acting. A standalone wake word
+        // opens a short command window; "Buddy, open YouTube" works in one phrase.
+        val wakeMatch = Regex("^(buddy|बडी|बड्डी)(?:[, ]+|$)").find(raw)
+        val hasWakePrefix = wakeMatch != null
+        val command = if (hasWakePrefix) raw.removeRange(wakeMatch!!.range).trim() else raw
+
+        if (hasWakePrefix && command.isBlank()) {
+            wakeArmed = true
+            wakeTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
+            val timeout = Runnable { wakeArmed = false; wakeTimeout = null }
+            wakeTimeout = timeout
+            actionTimeoutHandler.postDelayed(timeout, 8000L)
             speak("जी, बताइए।")
             return
         }
-        // Accept the requested single-word wake name at the start of a command.
-        val s = raw.replace(Regex("^(buddy|बडी|बड्डी)[, ]*"), "").trim()
-        if (s.isBlank()) return
+        if (!hasWakePrefix && !wakeArmed) return
+        wakeArmed = false
+        wakeTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
+        wakeTimeout = null
+        val s = command.ifBlank { raw }
         if (s.contains("रुक") || s.contains("बंद सुनना") || s.contains("stop listening") || s == "stop") {
             clearPendingAction()
             afterSpeech = null
@@ -517,6 +533,8 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         clearPendingAction()
         afterSpeech = null
         actionTimeoutHandler.removeCallbacksAndMessages(null)
+        wakeTimeout = null
+        wakeArmed = false
         stopping = true
         pauseListening = true
         recognizer?.cancel()
