@@ -10,6 +10,8 @@ This is a defensive review of the current Android codebase, not a certification 
 - AI responses are read with a 64 KiB cap to limit oversized responses.
 - API keys continue to be encrypted with Android Keystore; no key should ever be committed to this public repository.
 - Android backup is disabled.
+- The API key is no longer prefilled into the settings field; leaving it blank preserves the saved key, and a separate button clears it.
+- Optional Accessibility service listens only for focused-view events; it is not subscribed to window-state events.
 - The listening service is not exported. Accessibility is protected by Android's BIND_ACCESSIBILITY_SERVICE permission.
 
 ## Important existing permissions and user controls
@@ -27,7 +29,10 @@ The current app has no web frontend, user accounts, checkout, payment processing
 - The user-configured AI endpoint is checked on-device, but DNS can theoretically change between validation and connection (DNS rebinding); this is not a substitute for a trusted-provider allowlist or backend proxy.
 - Accessibility service behaviour and microphone foreground-service behaviour must be tested on the actual phone and Android version.
 - No malware scan can prove the entire device is clean. This repository review cannot inspect other apps or files on the user's phone.
-- Dependency and GitHub Actions supply-chain review, static analysis, release signing, APK malware scanning, and device testing remain to be completed. The current workflow produces a debug APK, not a production-signed release.
+- CI now runs Android Lint, unit tests, and a debug build. Dependabot weekly update checks are configured for Gradle dependencies and GitHub Actions.
+- CodeQL static analysis and secret scanning should be enabled/verified in repository Security settings; no claim is made that all secrets or malware have been detected.
+- GitHub Actions are referenced by major version tags, not immutable commit SHAs; supply-chain pinning remains a hardening item.
+- Release signing, APK malware scanning, and device testing remain to be completed. The current workflow produces a debug APK, not a production-signed release.
 - A successful build proves compilation only; it does not prove the app is secure.
 
 ## Phone safety checklist before installing
@@ -42,3 +47,9 @@ The current app has no web frontend, user accounts, checkout, payment processing
 ## 30-point guide mapping
 Applicable now: secret handling, prompt injection/tool least privilege, input/output bounds, network transport, dependency/supply-chain checks, permission minimization, exported component review, secure storage, CI build permissions, and security misconfiguration.
 Not applicable now: web-only, payments/commerce, multi-user database, OAuth, upload, and server-side categories listed above.
+
+
+## Verification record
+- Source review and AndroidManifest/permission review performed in this repository.
+- CI lint, unit tests, and APK build are configured; results must be checked on the latest workflow run before distributing its artifact.
+- No test on the user's physical phone has been performed from this environment.
