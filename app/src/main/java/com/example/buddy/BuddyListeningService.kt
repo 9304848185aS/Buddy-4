@@ -58,12 +58,13 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             // Prefer Android's on-device recognizer when the device exposes one.
             // Otherwise fall back to the system recognizer; offline support then
             // depends on the speech service and language pack installed by the user.
-            recognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            val speechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
                 SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
             } else {
                 SpeechRecognizer.createSpeechRecognizer(this)
-            }.also { it.setRecognitionListener(this) }
+            }
+            recognizer = speechRecognizer.also { it.setRecognitionListener(this) }
             listen()
         } else stopSelf()
     }
