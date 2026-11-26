@@ -30,7 +30,7 @@ object AiBrain {
             main.post { reply("मेरा AI brain अभी configure नहीं है। Buddy में AI Settings खोलकर endpoint, model और API key सेव करें।") }
             return
         }
-        if (!endpoint.startsWith("https://", ignoreCase = true)) {
+        if (!NetworkSecurity.isSafeHttpsEndpoint(endpoint)) {
             main.post { reply("AI endpoint सुरक्षित HTTPS address होना चाहिए।") }
             return
         }
@@ -61,8 +61,9 @@ object AiBrain {
 
                 connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
-                    connectTimeout = 15000
-                    readTimeout = 25000
+                    connectTimeout = 10000
+                    readTimeout = 20000
+                    instanceFollowRedirects = false
                     doOutput = true
                     setRequestProperty("Content-Type", "application/json")
                     setRequestProperty("Authorization", "Bearer $apiKey")
@@ -72,7 +73,7 @@ object AiBrain {
                 connection.outputStream.use { it.write(body.toByteArray(StandardCharsets.UTF_8)) }
                 val code = connection.responseCode
                 val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-                val response = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                val response = stream?.use { NetworkSecurity.readUtf8Limited(it, 64 * 1024) }.orEmpty()
                 if (code in 200..299) {
                     val content = JSONObject(response).optJSONArray("choices")
                         ?.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty()
@@ -114,7 +115,7 @@ object AiBrain {
         val model = prefs.getString("model", "")?.trim().orEmpty()
         val apiKey = SecureKeyStore.get(appContext).trim()
         if (endpoint.isBlank() || model.isBlank() || apiKey.isBlank() ||
-            !endpoint.startsWith("https://", ignoreCase = true)) {
+            !NetworkSecurity.isSafeHttpsEndpoint(endpoint)) {
             main.post { reply(ActionPlan("NONE", "", "AI settings are not configured")) }
             return
         }
@@ -139,8 +140,9 @@ object AiBrain {
                     .put(JSONObject().put("role", "user").put("content", prompt.take(1000)))
                 connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
-                    connectTimeout = 15000
-                    readTimeout = 25000
+                    connectTimeout = 10000
+                    readTimeout = 20000
+                    instanceFollowRedirects = false
                     doOutput = true
                     setRequestProperty("Content-Type", "application/json")
                     setRequestProperty("Authorization", "Bearer $apiKey")
@@ -149,7 +151,7 @@ object AiBrain {
                     .put("temperature", 0.0).put("max_tokens", 180).toString()
                 connection.outputStream.use { it.write(body.toByteArray(StandardCharsets.UTF_8)) }
                 if (connection.responseCode in 200..299) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    val response = connection.inputStream.use { NetworkSecurity.readUtf8Limited(it, 64 * 1024) }
                     val content = JSONObject(response).optJSONArray("choices")
                         ?.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty()
                     val start = content.indexOf('{')
