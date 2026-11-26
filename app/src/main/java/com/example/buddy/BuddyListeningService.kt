@@ -72,16 +72,11 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         startForeground(101, notification)
         tts = TextToSpeech(this, this)
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
-            // Prefer Android's on-device recognizer when the device exposes one.
-            // Otherwise fall back to the system recognizer; offline support then
-            // depends on the speech service and language pack installed by the user.
-            val speechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
-                SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
-            } else {
-                SpeechRecognizer.createSpeechRecognizer(this)
+            // Use Android's standard speech recognition service. Buddy does not
+            // select or bundle a separate offline recognition engine.
+            recognizer = SpeechRecognizer.createSpeechRecognizer(this).also {
+                it.setRecognitionListener(this)
             }
-            recognizer = speechRecognizer.also { it.setRecognitionListener(this) }
             listen()
         } else stopSelf()
     }
@@ -137,7 +132,6 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1200L)
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }
         try { recognizer?.startListening(intent) } catch (_: Exception) { restarting = false; stopSelf() }
