@@ -443,8 +443,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         pauseListening = true
         val result = tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "buddy_reply")
         if (result == TextToSpeech.ERROR) {
-            pauseListening = false
-            if (!stopping) listen()
+            finishSpeechTurn()
         }
     }
 
