@@ -77,7 +77,7 @@ object AiBrain {
                     val content = JSONObject(response).optJSONArray("choices")
                         ?.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty()
                     result = content.ifBlank { "AI से खाली जवाब मिला।" }
-                    if (remember && content.isNotBlank()) {
+                    if (MemoryPolicy.shouldPersistHistory(remember, prefs.getBoolean("memory_enabled", false), content)) {
                         val saved = prefs.getString(HISTORY_KEY, "[]").orEmpty()
                         val history = try { JSONArray(saved) } catch (_: Exception) { JSONArray() }
                         history.put(JSONObject().put("role", "user").put("content", prompt.take(1200)))
