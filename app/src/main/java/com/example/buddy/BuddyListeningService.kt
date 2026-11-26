@@ -30,6 +30,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var tts: TextToSpeech? = null
     private var ready = false
     private var pendingSpeech: String? = null
+    private var afterSpeech: (() -> Unit)? = null
     private var restarting = false
     private var stopping = false
     private var pauseListening = false
@@ -90,25 +91,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) { }
                 override fun onDone(utteranceId: String?) {
-                    Handler(Looper.getMainLooper()).post {
-                        if (!stopping) {
-                            pauseListening = false
-                            listen()
-                        }
-                    }
+                    Handler(Looper.getMainLooper()).post { finishSpeechTurn() }
                 }
                 @Deprecated("Deprecated in Java")
                 override fun onError(utteranceId: String?) {
-                    Handler(Looper.getMainLooper()).post {
-                        pauseListening = false
-                        if (!stopping) listen()
-                    }
+                    Handler(Looper.getMainLooper()).post { finishSpeechTurn() }
                 }
                 override fun onError(utteranceId: String?, errorCode: Int) {
-                    Handler(Looper.getMainLooper()).post {
-                        pauseListening = false
-                        if (!stopping) listen()
-                    }
+                    Handler(Looper.getMainLooper()).post { finishSpeechTurn() }
                 }
             })
             val queued = pendingSpeech
@@ -149,6 +139,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         // Accept the requested single-word wake name at the start of a command.
         val s = raw.replace(Regex("^(buddy|बडी|बड्डी)[, ]*"), "").trim()
         if (s.isBlank()) return
+        if (s.contains("रुक") || s.contains("बंद सुनना") || s.contains("stop listening") || s == "stop") {
+            clearPendingAction()
+            afterSpeech = null
+            stopping = true
+            speak("ठीक है, सुनना बंद कर रहा हूँ")
+            Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1500)
+            return
+        }
         val waiting = pendingActions.getOrNull(pendingActionIndex)
         if (waiting != null) {
             when {
@@ -353,17 +351,24 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         actionTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
         actionTimeout = null
         pendingActionIndex += 1
+        // Do not announce the next step until the current action's spoken
+        // result has finished. This prevents TTS replies from interrupting
+        // each other and keeps every step separately confirmed.
+        afterSpeech = {
+            if (!stopping) {
+                if (pendingActionIndex < pendingActions.size) {
+                    announcePendingAction()
+                } else {
+                    clearPendingAction()
+                    speak("सभी सुरक्षित steps पूरे हो गए।")
+                }
+            }
+        }
         when (step.action) {
             "OPEN_APP" -> if (!launchNamedApp(step.value)) speak("${step.value} ऐप नहीं मिला।")
             "TYPE_TEXT" -> typeIntoFocusedField("type ${step.value}")
             "WEB_SEARCH" -> searchWeb("search ${step.value}")
             else -> speak("यह action उपलब्ध नहीं है।")
-        }
-        if (pendingActionIndex < pendingActions.size) {
-            // Each subsequent step requires a fresh spoken confirmation.
-            actionTimeoutHandler.postDelayed({ announcePendingAction() }, 1200L)
-        } else {
-            clearPendingAction()
         }
     }
 
@@ -415,6 +420,18 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         } else speak("$label इस फोन में नहीं मिला")
     }
 
+    private fun finishSpeechTurn() {
+        if (stopping) return
+        val continuation = afterSpeech
+        afterSpeech = null
+        if (continuation != null) {
+            continuation()
+        } else {
+            pauseListening = false
+            listen()
+        }
+    }
+
     private fun speak(message: String) {
         if (!ready || tts == null) {
             // Speech recognition can return a command before TextToSpeech finishes
@@ -459,6 +476,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onDestroy() {
         // Never leave a delayed confirmation alive after the listening service stops.
         clearPendingAction()
+        afterSpeech = null
         actionTimeoutHandler.removeCallbacksAndMessages(null)
         stopping = true
         pauseListening = true
