@@ -22,6 +22,9 @@
             </intent-filter>
         </activity>
         <service android:name=".BuddyListeningService" android:exported="false" android:foregroundServiceType="microphone" />
+        <service android:name=".BuddyNotificationListener" android:label="Buddy notification reader" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
+            <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
+        </service>
         <service
             android:name=".BuddyTypingAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
