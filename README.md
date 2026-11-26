@@ -5,6 +5,7 @@ A Kotlin Android voice-control prototype. Tap **START LISTENING**, then say **Bu
 ## Current voice commands
 - Stop listening: **रुक जा**, **stop listening**, or **stop**.
 - Time, date, and battery status.
+- Start a system countdown timer by voice, for example **10 मिनट का टाइमर** or **timer 30 seconds**; Android Clock shows the timer for confirmation.
 - Media volume up/down, mute, and unmute by voice.
 - Ask **what can you do** / **तुम क्या कर सकते हो** to hear Buddy's supported features.
 - Open YouTube, Chrome, Gmail, Play Store, Photos, Camera, Maps, Contacts, Messages, Phone dialer, Wi-Fi/Bluetooth settings, Android Settings, and Calculator.
