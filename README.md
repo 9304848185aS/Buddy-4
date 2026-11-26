@@ -35,6 +35,17 @@ Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. Whe
 - Buddy does not silently send messages, place calls, access private media, make payments, operate banking apps, or bypass Android security. Sensitive actions require user interaction.
 - Use **STOP** or say **रुक जा** to end microphone use.
 
+## First phone test checklist
+After installing the latest successful debug APK:
+1. Open Buddy and grant microphone permission. Grant notification permission when Android asks.
+2. Tap **START LISTENING** and confirm the ongoing Buddy listening notification appears.
+3. Say **Buddy**, then try **time**, **date**, **battery**, **open YouTube**, and **रुक जा**.
+4. Start listening again. For voice typing, enable Buddy only if you want this optional feature, open a notes app, focus its text field, and say **टाइप करो नमस्ते**. Verify the text appears; submit it yourself.
+5. Test online AI only after configuring your own provider endpoint, model, and API key. Try a harmless question first. For an AI-proposed supported action, test both **हाँ** and **नहीं**; if you do not answer within 15 seconds, it should cancel.
+6. Tap **STOP** and confirm the listening notification disappears.
+
+These are manual device checks, not tests already performed by the repository build. GitHub Actions verifies that the Android project compiles and packages; it cannot verify microphone behavior, speech recognition, accessibility settings, or actual phone actions on your device.
+
 ## Technical
 - Package: `com.example.buddy`
 - Minimum Android: 8.0 (API 26)
