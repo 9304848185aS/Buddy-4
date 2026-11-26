@@ -153,6 +153,7 @@ class MainActivity : Activity() {
                         .putString("model", model)
                         .remove("api_key")
                         .putBoolean("memory_enabled", memoryCheck.isChecked).apply()
+                    if (!memoryCheck.isChecked) AiBrain.clearHistory(this@MainActivity)
                     Toast.makeText(this@MainActivity, "AI settings saved on this phone.", Toast.LENGTH_SHORT).show()
                 }
             }
