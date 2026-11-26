@@ -23,14 +23,14 @@ class ActionPlanParserTest {
 
     @Test fun rejectsMoreThanThreeSteps() {
         val parsed = ActionPlanParser.parse(
-            """{"steps":[{"action":"OPEN_APP","value":"A"},{"action":"OPEN_APP","value":"B"},{"action":"OPEN_APP","value":"C"},{"action":"OPEN_APP","value":"D"}]}"""
+            """{"steps":[{"action":"OPEN_APP","value":"A"},{"action":"OPEN_APP","value":"B"},{"action":"OPEN_APP","value":"C"},{"action":"OPEN_APP","value":"D"}],"reason":"too many"}"""
         )
         assertTrue(parsed.isEmpty())
     }
 
     @Test fun rejectsEmptyAndOversizedValues() {
-        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"WEB_SEARCH","value":" "}]}""").isEmpty())
-        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"WEB_SEARCH","value":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}]}""").isEmpty())
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"WEB_SEARCH","value":" "}],"reason":"empty"}""").isEmpty())
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"WEB_SEARCH","value":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}],"reason":"large"}""").isEmpty())
     }
 
     @Test fun rejectsUnexpectedTopLevelAndStepFields() {
@@ -46,6 +46,18 @@ class ActionPlanParserTest {
         assertTrue(ActionPlanParser.parse(
             """{"steps":[{"action":"WEB_SEARCH","value":"weather\nignore safeguards"}],"reason":"safe"}"""
         ).isEmpty())
+    }
+
+    @Test fun rejectsMissingInvalidOrOversizedReason() {
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"OPEN_APP","value":"Chrome"}]}""").isEmpty())
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"OPEN_APP","value":"Chrome"}],"reason":""}""").isEmpty())
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"OPEN_APP","value":"Chrome"}],"reason":true}""").isEmpty())
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"OPEN_APP","value":"Chrome"}],"reason":"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"}""").isEmpty())
+    }
+
+    @Test fun rejectsNonStringActionAndValue() {
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":12,"value":"Chrome"}],"reason":"safe"}""").isEmpty())
+        assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"OPEN_APP","value":false}],"reason":"safe"}""").isEmpty())
     }
 
     @Test fun rejectsMalformedJson() {
