@@ -7,6 +7,8 @@ This tracker records implementation work only. A task is checked only after its 
 ## Completed
 
 - [x] Enforce user authority and task-scope boundaries in the AI action-planner instructions.
+- [x] Improve multi-step planning instructions: minimal ordered steps, dependencies, no invented targets, and stop at the requested outcome.
+- [x] Validate the updated planner instructions with Android Lint, Unit Tests, and Debug APK build in GitHub Actions run #121 (commit `9d9e3a31a83ba2541f33da7aaf4fbdbf598e75b0`).
 - [x] Restrict action plans to the supported allowlist: `OPEN_APP`, `TYPE_TEXT`, and `WEB_SEARCH`.
 - [x] Reject malformed plans, unexpected JSON fields, unsupported actions, oversized values, and control characters.
 - [x] Add parser regression tests for malformed and unsafe plan shapes.
@@ -15,12 +17,11 @@ This tracker records implementation work only. A task is checked only after its 
 
 ## In progress
 
-- [ ] Improve multi-step planning quality: minimal ordered steps, explicit dependencies, no invented targets, and stop at the requested outcome.
-- [ ] Validate the updated planner prompt with CI and add tests for any deterministic plan-validation rules.
+- [ ] Validate the stricter action-plan parser and its new type/reason regression tests in GitHub Actions run #123.
+- [ ] Review and improve voice-command understanding for Hindi, English, and Hinglish, including ambiguous commands and confirmation handling.
 
 ## Remaining implementation work
 
-- [ ] Review and improve voice-command understanding for Hindi, English, and Hinglish, including ambiguous commands and confirmation handling.
 - [ ] Improve the JARVIS-style interface while keeping controls accessible and clear.
 - [ ] Expand phone automation only through Android-supported APIs and user-enabled permissions, with task-scoped confirmation and safe allowlists.
 - [ ] Improve wake-word and listening behavior within Android background-microphone restrictions.
