@@ -30,14 +30,13 @@ object AiBrain {
             main.post { reply("मेरा AI brain अभी configure नहीं है। Buddy में AI Settings खोलकर endpoint, model और API key सेव करें।") }
             return
         }
-        if (!NetworkSecurity.isSafeHttpsEndpoint(endpoint)) {
-            main.post { reply("AI endpoint सुरक्षित HTTPS address होना चाहिए।") }
-            return
-        }
-
         executor.execute {
             var result = "अभी AI सेवा से जवाब नहीं मिल पाया। इंटरनेट और API settings जाँचें।"
             var connection: HttpURLConnection? = null
+            if (!NetworkSecurity.isSafeHttpsEndpoint(endpoint)) {
+                main.post { reply("AI endpoint सुरक्षित HTTPS address होना चाहिए।") }
+                return@execute
+            }
             try {
                 val messages = JSONArray().put(
                     JSONObject().put("role", "system").put(
@@ -115,8 +114,7 @@ object AiBrain {
         val endpoint = prefs.getString("endpoint", "")?.trim().orEmpty()
         val model = prefs.getString("model", "")?.trim().orEmpty()
         val apiKey = SecureKeyStore.get(appContext).trim()
-        if (endpoint.isBlank() || model.isBlank() || apiKey.isBlank() ||
-            !NetworkSecurity.isSafeHttpsEndpoint(endpoint)) {
+        if (endpoint.isBlank() || model.isBlank() || apiKey.isBlank()) {
             main.post { reply(ActionPlan(emptyList(), "AI settings are not configured")) }
             return
         }
@@ -124,6 +122,10 @@ object AiBrain {
         executor.execute {
             var plan = ActionPlan(emptyList(), "No safe supported action")
             var connection: HttpURLConnection? = null
+            if (!NetworkSecurity.isSafeHttpsEndpoint(endpoint)) {
+                main.post { reply(ActionPlan(emptyList(), "AI endpoint must be a trusted HTTPS address")) }
+                return@execute
+            }
             try {
                 val system = """
                     You are the action planner for an Android voice assistant.
