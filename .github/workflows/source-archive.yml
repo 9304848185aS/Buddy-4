@@ -1,0 +1,24 @@
+name: Archive Buddy Source
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create source archive
+        run: zip -r Buddy-4-source-files.zip . -x ".git/*" ".gradle/*" "*/build/*"
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: Buddy-4-all-source-files
+          path: Buddy-4-source-files.zip
+          if-no-files-found: error
+          retention-days: 30
