@@ -13,12 +13,12 @@ This tracker records implementation work only. A task is checked only after its 
 - [x] Reject malformed plans, unexpected JSON fields, unsupported actions, oversized values, and control characters.
 - [x] Add parser regression tests for malformed and unsafe plan shapes.
 - [x] Fix the escaped-newline regression test.
-- [x] Pass Android Lint, Unit Tests, and Debug APK build in GitHub Actions run #119 (commit `f106c955c460f6227660cf57631646f574166ca2`).
+- [x] Pass Android Lint, Unit Tests, Debug APK build, and APK artifact upload in GitHub Actions run #123 (commit `095c93b8f21d2d7592d00564d95859d0ed7de4ca`).
+- [x] Audit current voice-service routing, screen-reading, focused-field typing, and permission declarations.
 
 ## In progress
 
-- [ ] Validate the stricter action-plan parser and its new type/reason regression tests in GitHub Actions run #123.
-- [ ] Review and improve voice-command understanding for Hindi, English, and Hinglish, including ambiguous commands and confirmation handling.
+- [ ] Improve voice-command understanding for Hindi, English, and Hinglish, including ambiguous commands and confirmation handling.
 
 ## Remaining implementation work
 
