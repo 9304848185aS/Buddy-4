@@ -372,8 +372,17 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
     override fun onDestroy() {
-        recognizer?.destroy(); recognizer = null
-        tts?.stop(); tts?.shutdown(); tts = null
+        // Never leave a delayed confirmation alive after the listening service stops.
+        clearPendingAction()
+        actionTimeoutHandler.removeCallbacksAndMessages(null)
+        stopping = true
+        pauseListening = true
+        recognizer?.cancel()
+        recognizer?.destroy()
+        recognizer = null
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
         super.onDestroy()
     }
     override fun onBind(intent: Intent?): IBinder? = null
