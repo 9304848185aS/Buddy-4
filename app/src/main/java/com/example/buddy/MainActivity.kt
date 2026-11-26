@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
+import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -95,9 +96,12 @@ class MainActivity : Activity() {
             prefs.getString("model", "").orEmpty())
         content.addView(modelInput)
         content.addView(label("API key (encrypted with Android Keystore)"))
-        keyInput = field("Paste provider API key here",
-            SecureKeyStore.get(this),
-            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        keyInput = field("Leave blank to keep the saved key",
+            "",
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD).apply {
+                importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+                setAutofillHints()
+            }
         content.addView(keyInput)
         content.addView(Button(this).apply {
             text = "SAVE AI SETTINGS"
@@ -108,10 +112,11 @@ class MainActivity : Activity() {
                 if (endpoint.isNotBlank() && !endpoint.startsWith("https://", ignoreCase = true)) {
                     Toast.makeText(this@MainActivity, "Use a secure https:// endpoint.", Toast.LENGTH_LONG).show()
                 } else {
-                    if (!SecureKeyStore.set(this@MainActivity, key)) {
+                    if (key.isNotBlank() && !SecureKeyStore.set(this@MainActivity, key)) {
                         Toast.makeText(this@MainActivity, "API key सुरक्षित रूप से save नहीं हुई। पुरानी settings नहीं बदलीं।", Toast.LENGTH_LONG).show()
                         return@setOnClickListener
                     }
+                    keyInput.text.clear()
                     prefs.edit().putString("endpoint", endpoint)
                         .putString("model", model)
                         .remove("api_key")
@@ -121,6 +126,14 @@ class MainActivity : Activity() {
             }
         })
 
+        content.addView(Button(this).apply {
+            text = "CLEAR SAVED API KEY"
+            setOnClickListener {
+                SecureKeyStore.set(this@MainActivity, "")
+                keyInput.text.clear()
+                Toast.makeText(this@MainActivity, "Saved API key cleared from this app.", Toast.LENGTH_SHORT).show()
+            }
+        })
         content.addView(label("OPTIONAL CONVERSATION MEMORY"))
         memoryCheck = CheckBox(this).apply {
             text = "Remember recent AI chat on this phone"
