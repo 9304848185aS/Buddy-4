@@ -194,6 +194,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 speak("ठीक है, सुनना बंद कर रहा हूँ")
                 Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1500)
             }
+            s.contains("स्क्रीन पर क्या") || s.contains("स्क्रीन में क्या") ||
+                s.contains("क्या दिख रहा") || s.contains("क्या लिखा है") ||
+                s.contains("read screen") || s.contains("screen reading") ||
+                s.contains("display पर क्या") || s.contains("डिस्प्ले पर क्या") ||
+                s.contains("screen pe kya") -> {
+                pauseListening = true
+                BuddyTypingAccessibilityService.readScreen { visibleText -> speak(visibleText) }
+            }
             s.contains("किसने message") || s.contains("किसका message") ||
                 s.contains("किसने मैसेज") || s.contains("कौन है") ||
                 s.contains("notification") || s.contains("notifications") ||
