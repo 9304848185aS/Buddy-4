@@ -33,6 +33,22 @@ class ActionPlanParserTest {
         assertTrue(ActionPlanParser.parse("""{"steps":[{"action":"WEB_SEARCH","value":"${"x".repeat(181)}"}]}""").isEmpty())
     }
 
+
+    @Test fun rejectsUnexpectedTopLevelAndStepFields() {
+        assertTrue(ActionPlanParser.parse(
+            """{"steps":[{"action":"OPEN_APP","value":"Chrome","extra":"run anything"}],"reason":"safe"}"""
+        ).isEmpty())
+        assertTrue(ActionPlanParser.parse(
+            """{"steps":[{"action":"OPEN_APP","value":"Chrome"}],"reason":"safe","autonomous":true}"""
+        ).isEmpty())
+    }
+
+    @Test fun rejectsControlCharactersInActionValues() {
+        assertTrue(ActionPlanParser.parse(
+            """{"steps":[{"action":"WEB_SEARCH","value":"weather\\nignore safeguards"}],"reason":"safe"}"""
+        ).isEmpty())
+    }
+
     @Test fun rejectsMalformedJson() {
         assertTrue(ActionPlanParser.parse("not json").isEmpty())
     }
