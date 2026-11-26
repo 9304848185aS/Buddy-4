@@ -25,7 +25,7 @@ class BuddyTypingAccessibilityService : AccessibilityService() {
     private fun enterFocusedText(value: String): Boolean {
         val root = rootInActiveWindow ?: return false
         val field = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: return false
-        if (!field.isEditable || !field.isEnabled) return false
+        if (!field.isEditable || !field.isEnabled || field.isPassword) return false
         val args = Bundle().apply {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
         }
