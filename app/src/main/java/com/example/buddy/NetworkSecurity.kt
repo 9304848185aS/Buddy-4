@@ -18,7 +18,7 @@ object NetworkSecurity {
             val host = uri.host?.lowercase() ?: return false
             if (host.isBlank() || host == "localhost" || host.endsWith(".localhost") ||
                 host.endsWith(".local") || host.endsWith(".internal") ||
-                host.matches(Regex("""\\d{1,3}(\\.\\d{1,3}){3}""")) ||
+                (host.contains(".") && host.all { it.isDigit() || it == '.' }) ||
                 host.contains(":")) return false
             val addresses = InetAddress.getAllByName(host)
             addresses.isNotEmpty() && addresses.all { address ->
