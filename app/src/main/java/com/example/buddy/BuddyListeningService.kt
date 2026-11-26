@@ -32,6 +32,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var stopping = false
     private var pauseListening = false
     private var pendingAction: AiBrain.ActionPlan? = null
+    private val actionTimeoutHandler = Handler(Looper.getMainLooper())
+    private var actionTimeout: Runnable? = null
+
+    private fun clearPendingAction() {
+        actionTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
+        actionTimeout = null
+        pendingAction = null
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -115,7 +123,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         if (waiting != null) {
             when {
                 s.contains("नहीं") || s.contains("मत करो") || s == "no" || s == "cancel" -> {
-                    pendingAction = null
+                    clearPendingAction()
                     speak("ठीक है, action रद्द कर दिया।")
                 }
                 s == "हाँ" || s == "हां" || s.contains("कर दो") ||
@@ -251,7 +259,17 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 AiBrain.ask(this, command) { answer -> speak(answer) }
                 return@planAction
             }
+            clearPendingAction()
             pendingAction = plan
+            val timeout = Runnable {
+                if (pendingAction === plan) {
+                    pendingAction = null
+                    actionTimeout = null
+                    speak("समय पूरा हुआ। सुरक्षा के लिए action रद्द कर दिया।")
+                }
+            }
+            actionTimeout = timeout
+            actionTimeoutHandler.postDelayed(timeout, 15000L)
             val description = when (plan.action) {
                 "OPEN_APP" -> "${plan.value} ऐप खोलना"
                 "TYPE_TEXT" -> "चुने हुए text box में ${plan.value} लिखना"
@@ -264,7 +282,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private fun executePendingAction() {
         val plan = pendingAction ?: return
-        pendingAction = null
+        clearPendingAction()
         when (plan.action) {
             "OPEN_APP" -> if (!launchNamedApp(plan.value)) speak("${plan.value} ऐप नहीं मिला।")
             "TYPE_TEXT" -> typeIntoFocusedField("type ${plan.value}")
