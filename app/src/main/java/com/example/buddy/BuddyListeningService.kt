@@ -55,7 +55,15 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         startForeground(101, notification)
         tts = TextToSpeech(this, this)
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
-            recognizer = SpeechRecognizer.createSpeechRecognizer(this).also { it.setRecognitionListener(this) }
+            // Prefer Android's on-device recognizer when the device exposes one.
+            // Otherwise fall back to the system recognizer; offline support then
+            // depends on the speech service and language pack installed by the user.
+            recognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+                SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+            } else {
+                SpeechRecognizer.createSpeechRecognizer(this)
+            }.also { it.setRecognitionListener(this) }
             listen()
         } else stopSelf()
     }
