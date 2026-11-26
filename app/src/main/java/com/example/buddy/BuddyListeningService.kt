@@ -205,6 +205,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 s.contains("तुम्हारे काम") -> speak("मैं ऐप खोल सकता हूँ, समय तारीख और बैटरी बता सकता हूँ, अलार्म स्क्रीन खोल सकता हूँ, वेब search कर सकता हूँ, मीडिया आवाज़ बदल सकता हूँ और चुने हुए text box में आपकी अनुमति से text लिख सकता हूँ। Online AI के लिए AI settings चाहिए।")
             s.startsWith("type ") || s.startsWith("टाइप करो ") ||
                 s.startsWith("लिखो ") || s.startsWith("लिख दो ") -> typeIntoFocusedField(s)
+            s.contains("टाइमर") || s.contains("timer") || s.contains("countdown") -> setTimer(s)
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
             s.contains("वाईफाई") || s.contains("wi-fi") || s.contains("wifi") -> openSettings(Settings.Panel.ACTION_WIFI, "वाई-फाई सेटिंग")
             s.contains("ब्लूटूथ") || s.contains("bluetooth") -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS, "ब्लूटूथ सेटिंग")
@@ -407,6 +408,23 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         openIntent(alarm, "अलार्म")
+    }
+
+    private fun setTimer(command: String) {
+        val match = Regex("(\\d{1,3})").find(command)
+        val duration = match?.groupValues?.getOrNull(1)?.toIntOrNull()
+        if (duration == null || duration !in 1..5999) {
+            speak("कृपया मिनट बताइए, जैसे 10 मिनट का टाइमर।")
+            return
+        }
+        val seconds = if (command.contains("सेकंड") || command.contains("second")) duration else duration * 60
+        val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
+            putExtra(AlarmClock.EXTRA_LENGTH, seconds)
+            putExtra(AlarmClock.EXTRA_MESSAGE, "Buddy timer")
+            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        openIntent(intent, "टाइमर")
     }
 
     private fun openSettings(action: String, label: String) {
