@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.net.Uri
+import android.media.AudioManager
 import android.os.Build
 import android.os.BatteryManager
 import android.os.Bundle
@@ -181,6 +182,17 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
                 speak("बैटरी " + bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + " प्रतिशत है")
             }
+            s.contains("आवाज बढ़ाओ") || s.contains("आवाज़ बढ़ाओ") ||
+                s.contains("volume up") || s.contains("volume increase") ||
+                s.contains("आवाज तेज") || s.contains("आवाज़ तेज") -> adjustMusicVolume(AudioManager.ADJUST_RAISE, "आवाज़ बढ़ा दी")
+            s.contains("आवाज कम") || s.contains("आवाज़ कम") ||
+                s.contains("volume down") || s.contains("volume decrease") -> adjustMusicVolume(AudioManager.ADJUST_LOWER, "आवाज़ कम कर दी")
+            s == "mute" || s.contains("आवाज बंद") || s.contains("आवाज़ बंद") ||
+                s.contains("mute volume") -> adjustMusicVolume(AudioManager.ADJUST_MUTE, "मीडिया आवाज़ mute कर दी")
+            s == "unmute" || s.contains("आवाज चालू") || s.contains("आवाज़ चालू") ||
+                s.contains("unmute volume") -> adjustMusicVolume(AudioManager.ADJUST_UNMUTE, "मीडिया आवाज़ चालू कर दी")
+            s.contains("तुम क्या कर सकते") || s.contains("what can you do") ||
+                s.contains("तुम्हारे काम") -> speak("मैं ऐप खोल सकता हूँ, समय तारीख और बैटरी बता सकता हूँ, अलार्म स्क्रीन खोल सकता हूँ, वेब search कर सकता हूँ, मीडिया आवाज़ बदल सकता हूँ और चुने हुए text box में आपकी अनुमति से text लिख सकता हूँ। Online AI के लिए AI settings चाहिए।")
             s.startsWith("type ") || s.startsWith("टाइप करो ") ||
                 s.startsWith("लिखो ") || s.startsWith("लिख दो ") -> typeIntoFocusedField(s)
             s.contains("अलार्म") || s.contains("alarm") -> setAlarm(s)
@@ -223,6 +235,20 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         BuddyTypingAccessibilityService.typeIntoFocusedField(text) { success ->
             speak(if (success) "आपका text चुने हुए box में डाल दिया है। भेजने या search करने से पहले जाँच लें।"
                   else "पहले ऐप में text box पर tap करके cursor रखें और Buddy की Accessibility typing permission चालू करें।")
+        }
+    }
+
+    private fun adjustMusicVolume(direction: Int, confirmation: String) {
+        try {
+            val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+            audio.adjustStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                direction,
+                AudioManager.FLAG_SHOW_UI
+            )
+            speak(confirmation)
+        } catch (_: Exception) {
+            speak("मीडिया आवाज़ अभी नहीं बदल पाया।")
         }
     }
 
