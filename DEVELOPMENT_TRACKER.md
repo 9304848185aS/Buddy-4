@@ -18,16 +18,13 @@ This tracker records implementation work only. A task is checked only after its 
 
 ## In progress
 
-- [ ] Improve the JARVIS-style interface while keeping controls accessible and clear.
-
-
-- [x] Add deterministic Hindi/English wake-word recognition, explicit confirmation/cancellation phrases, and stop-command matching; add regression tests. Android Lint, Unit Tests, Debug APK build, and APK upload passed in Build #129.
+- [ ] Expand phone automation only through Android-supported APIs and user-enabled permissions, with task-scoped confirmation and safe allowlists.
 
 ## Remaining implementation work
 
-- [ ] Expand phone automation only through Android-supported APIs and user-enabled permissions, with task-scoped confirmation and safe allowlists.
 - [ ] Improve wake-word and listening behavior within Android background-microphone restrictions.
-- [ ] Review privacy and security: permissions, notification/screen data handling, API-key storage, memory controls, and network behavior.
+- [ ] Complete privacy/security review across permissions, notification/screen data handling, API-key storage, memory controls, and network behavior.
+- [x] Remove dismissed notification previews from Buddy's in-memory list and clear stored AI conversation history when optional memory is switched off. Validated in Build #134 (commit `11bed34f338bdf7659915790f6fe6db6b3dffca1`).
 - [ ] Add or improve automated tests for command routing, action execution, confirmation, cancellation, and error paths.
 - [ ] Produce and verify a final release APK after the remaining implementation and CI checks.
 
