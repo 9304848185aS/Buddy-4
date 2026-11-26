@@ -194,6 +194,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 speak("ठीक है, सुनना बंद कर रहा हूँ")
                 Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1500)
             }
+            s.contains("किसने message") || s.contains("किसका message") ||
+                s.contains("किसने मैसेज") || s.contains("कौन है") ||
+                s.contains("notification") || s.contains("notifications") ||
+                s.contains("नोटिफिकेशन") || s.contains("मैसेज आया") ||
+                s.contains("message आया") || s.contains("किसका संदेश") -> {
+                val summary = BuddyNotificationListener.latestSummary()
+                speak(summary)
+            }
             s.contains("समय") || s.contains("time") || s.contains("टाइम") ||
                 s.contains("कितने बजे") || s.contains("कितना बजा") ||
                 s.contains("क्या समय") || (s.contains("क्या हुआ है") && (s.contains("टाइम") || s.contains("वक्त"))) -> {
