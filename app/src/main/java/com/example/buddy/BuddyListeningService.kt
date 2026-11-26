@@ -154,7 +154,9 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
                 speak("ठीक है, सुनना बंद कर रहा हूँ")
                 Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 1500)
             }
-            s.contains("समय") || s.contains("time") || s.contains("कितने बजे") -> {
+            s.contains("समय") || s.contains("time") || s.contains("टाइम") ||
+                s.contains("कितने बजे") || s.contains("कितना बजा") ||
+                s.contains("क्या समय") || (s.contains("क्या हुआ है") && (s.contains("टाइम") || s.contains("वक्त"))) -> {
                 val now = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
                 speak("अभी समय है $now")
             }
