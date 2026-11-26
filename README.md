@@ -5,6 +5,8 @@ A Kotlin Android voice-control prototype. Tap **START LISTENING**, then say **Bu
 ## Current voice commands
 - Stop listening: **रुक जा**, **stop listening**, or **stop**.
 - Time, date, and battery status.
+- Media volume up/down, mute, and unmute by voice.
+- Ask **what can you do** / **तुम क्या कर सकते हो** to hear Buddy's supported features.
 - Open YouTube, Chrome, Gmail, Play Store, Photos, Camera, Maps, Contacts, Messages, Phone dialer, Wi-Fi/Bluetooth settings, Android Settings, and Calculator.
 - Try opening other installed apps by saying their visible app name (for example, open WhatsApp). This uses Android launcher visibility; apps without a launcher entry may not be available.
 - Optional voice typing: enable ENABLE OPTIONAL TEXT TYPING in Buddy, then enable Buddy in Android Accessibility settings. Open the target app yourself, tap its text field so the cursor is visible, and say type [words], टाइप करो [शब्द], or लिखो [शब्द]. Buddy only inserts text into the currently focused editable field. Check the text and press Search or Send yourself.
