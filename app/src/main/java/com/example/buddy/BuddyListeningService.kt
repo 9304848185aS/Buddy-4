@@ -411,13 +411,15 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun setTimer(command: String) {
-        val match = Regex("(\\d{1,3})").find(command)
+        val match = Regex("(\\d{1,5})").find(command)
         val duration = match?.groupValues?.getOrNull(1)?.toIntOrNull()
-        if (duration == null || duration !in 1..5999) {
-            speak("कृपया मिनट बताइए, जैसे 10 मिनट का टाइमर।")
+        val isSeconds = command.contains("सेकंड") || command.contains("second")
+        val maximum = if (isSeconds) 86400 else 1440
+        if (duration == null || duration !in 1..maximum) {
+            speak(if (isSeconds) "सेकंड 1 से 86400 के बीच बताइए।" else "मिनट 1 से 1440 के बीच बताइए।")
             return
         }
-        val seconds = if (command.contains("सेकंड") || command.contains("second")) duration else duration * 60
+        val seconds = if (isSeconds) duration else duration * 60
         val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
             putExtra(AlarmClock.EXTRA_LENGTH, seconds)
             putExtra(AlarmClock.EXTRA_MESSAGE, "Buddy timer")
