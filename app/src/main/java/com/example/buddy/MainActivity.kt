@@ -199,14 +199,14 @@ class MainActivity : Activity() {
                     child.setPadding(dp(14), dp(13), dp(14), dp(13))
                     child.isAllCaps = false
                 }
+                is EditText -> {
+                    child.setTextColor(Color.WHITE)
+                    child.setHintTextColor(Color.rgb(139, 157, 180))
+                }
                 is TextView -> {
                     if (child !== status && child.textColors.defaultColor == Color.BLACK) {
                         child.setTextColor(Color.rgb(218, 229, 243))
                     }
-                }
-                is EditText -> {
-                    child.setTextColor(Color.WHITE)
-                    child.setHintTextColor(Color.rgb(139, 157, 180))
                 }
             }
         }
