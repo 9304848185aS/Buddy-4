@@ -9,6 +9,11 @@ import java.util.Locale
 
 /** Short in-memory notification previews, read only after an explicit user request. */
 class BuddyNotificationListener : NotificationListenerService() {
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        val key = sbn?.key ?: return
+        synchronized(lock) { recent.removeAll { it.key == key } }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         val item = sbn ?: return
         if (item.packageName == packageName) return
