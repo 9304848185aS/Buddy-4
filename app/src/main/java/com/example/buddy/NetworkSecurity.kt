@@ -9,6 +9,16 @@ import java.net.URI
  * HTTPS only, no credentials in URL, no non-standard ports, no local/private destinations.
  */
 object NetworkSecurity {
+    private val trustedProviderHosts = setOf(
+        "api.groq.com",
+        "api.openai.com",
+        "openrouter.ai",
+        "api.together.xyz",
+        "api.deepseek.com",
+        "api.cerebras.ai",
+        "api.mistral.ai"
+    )
+
     fun isSafeHttpsEndpoint(value: String): Boolean {
         return try {
             val uri = URI(value.trim())
@@ -16,7 +26,7 @@ object NetworkSecurity {
             if (uri.userInfo != null || uri.fragment != null) return false
             if (uri.port != -1 && uri.port != 443) return false
             val host = uri.host?.lowercase() ?: return false
-            if (host.isBlank() || host == "localhost" || host.endsWith(".localhost") ||
+            if (host !in trustedProviderHosts || host == "localhost" || host.endsWith(".localhost") ||
                 host.endsWith(".local") || host.endsWith(".internal") ||
                 (host.contains(".") && host.all { it.isDigit() || it == '.' }) ||
                 host.contains(":")) return false
