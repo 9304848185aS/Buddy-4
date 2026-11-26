@@ -35,7 +35,7 @@ Every push to `main` starts the **Build Buddy APK** GitHub Actions workflow. Whe
 - Online AI planning requires internet and a configured provider. The AI action planner is restricted to at most three safe steps: OPEN_APP, TYPE_TEXT in the already-focused field, or WEB_SEARCH. Buddy asks for separate spoken confirmation before every step; an unconfirmed step automatically expires after 15 seconds and cancels the remaining steps. If the plan is unclear or unsupported, it answers normally instead. It does not perform arbitrary screen taps.
 - Accessibility typing is optional and disabled until you enable it in Android Settings. AI-planned typing also requires your spoken confirmation and only inserts text into the currently focused field. It does not read screen contents, click buttons, submit forms, or press Send/Search. You must review and submit text yourself.
 - Buddy does not silently send messages, place calls, access private media, make payments, operate banking apps, or bypass Android security. Sensitive actions require user interaction.
-- Use **STOP** or say **रुक जा** to end microphone use.
+- Use the **STOP** button in Buddy, the **STOP** action in the ongoing notification, or say **रुक जा** to end microphone use.
 
 ## First phone test checklist
 After installing the latest successful debug APK:
@@ -44,7 +44,7 @@ After installing the latest successful debug APK:
 3. Say **Buddy**, then try **time**, **date**, **battery**, **open YouTube**, and **रुक जा**.
 4. Start listening again. For voice typing, enable Buddy only if you want this optional feature, open a notes app, focus its text field, and say **टाइप करो नमस्ते**. Verify the text appears; submit it yourself.
 5. Test online AI only after configuring your own provider endpoint, model, and API key. Try a harmless question first. For an AI-proposed supported action, test both **हाँ** and **नहीं**; if you do not answer within 15 seconds, it should cancel.
-6. Tap **STOP** and confirm the listening notification disappears.
+6. Tap **STOP** in Buddy or in the listening notification and confirm the notification disappears.
 
 These are manual device checks, not tests already performed by the repository build. GitHub Actions verifies that the Android project compiles and packages; it cannot verify microphone behavior, speech recognition, accessibility settings, or actual phone actions on your device.
 
