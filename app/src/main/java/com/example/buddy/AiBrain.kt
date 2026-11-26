@@ -106,7 +106,8 @@ object AiBrain {
     }
 
 
-    data class ActionPlan(val action: String, val value: String, val reason: String)
+    data class ActionStep(val action: String, val value: String)
+    data class ActionPlan(val steps: List<ActionStep>, val reason: String)
 
     fun planAction(context: Context, prompt: String, reply: (ActionPlan) -> Unit) {
         val appContext = context.applicationContext
@@ -116,24 +117,28 @@ object AiBrain {
         val apiKey = SecureKeyStore.get(appContext).trim()
         if (endpoint.isBlank() || model.isBlank() || apiKey.isBlank() ||
             !NetworkSecurity.isSafeHttpsEndpoint(endpoint)) {
-            main.post { reply(ActionPlan("NONE", "", "AI settings are not configured")) }
+            main.post { reply(ActionPlan(emptyList(), "AI settings are not configured")) }
             return
         }
 
         executor.execute {
-            var plan = ActionPlan("NONE", "", "No safe supported action")
+            var plan = ActionPlan(emptyList(), "No safe supported action")
             var connection: HttpURLConnection? = null
             try {
                 val system = """
                     You are the action planner for an Android voice assistant.
-                    Return ONLY one valid JSON object with exactly these string fields:
-                    {"action":"OPEN_APP|TYPE_TEXT|WEB_SEARCH|NONE","value":"...","reason":"..."}
-                    Choose OPEN_APP only when the user clearly asks to open an app; value must be the visible app name, not a package name.
-                    Choose TYPE_TEXT only when the user clearly asks to type dictated text into the text field they have already focused; value is only the exact text to type.
-                    Choose WEB_SEARCH only when the user clearly asks to search the web; value is only the search query.
-                    Otherwise choose NONE.
-                    Never plan calls, messages, sending, posting, deleting, purchases, payments, banking, passwords, private photos/videos, permission changes, or form submission.
-                    Never chain actions. Never infer consent. Keep value under 180 characters. No markdown or extra text.
+                    Return ONLY one JSON object with exactly these fields:
+                    {"steps":[{"action":"OPEN_APP|TYPE_TEXT|WEB_SEARCH","value":"..."}],"reason":"..."}
+                    Plan one to three steps only when the user's request clearly needs a sequence.
+                    OPEN_APP: open an installed app by its visible app name.
+                    TYPE_TEXT: insert exact dictated text only into a text field the user has already focused.
+                    WEB_SEARCH: open a web search for the given query.
+                    Each step must be independently understandable and safe. Use only these three actions.
+                    Never plan calls, messages, sending, posting, deleting, purchases, payments, banking,
+                    passwords, private photos/videos, permission changes, form submission, or arbitrary taps.
+                    Never infer consent. The app will ask for separate yes/no confirmation before EVERY step.
+                    If the request cannot be safely represented, return {"steps":[],"reason":"..."}.
+                    Keep each value under 180 characters. No markdown or extra text.
                 """.trimIndent()
                 val messages = JSONArray()
                     .put(JSONObject().put("role", "system").put("content", system))
@@ -148,27 +153,38 @@ object AiBrain {
                     setRequestProperty("Authorization", "Bearer $apiKey")
                 }
                 val body = JSONObject().put("model", model).put("messages", messages)
-                    .put("temperature", 0.0).put("max_tokens", 180).toString()
+                    .put("temperature", 0.0).put("max_tokens", 260).toString()
                 connection.outputStream.use { it.write(body.toByteArray(StandardCharsets.UTF_8)) }
                 if (connection.responseCode in 200..299) {
                     val response = connection.inputStream.use { NetworkSecurity.readUtf8Limited(it, 64 * 1024) }
                     val content = JSONObject(response).optJSONArray("choices")
                         ?.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty()
-                    val start = content.indexOf('{')
-                    val end = content.lastIndexOf('}')
-                    if (start >= 0 && end > start) {
-                        val json = JSONObject(content.substring(start, end + 1))
-                        val action = json.optString("action").uppercase(Locale.ROOT)
-                        val value = json.optString("value").trim()
-                        val reason = json.optString("reason").take(120)
-                        if (action in setOf("OPEN_APP", "TYPE_TEXT", "WEB_SEARCH") &&
-                            value.isNotBlank() && value.length <= 180) {
-                            plan = ActionPlan(action, value, reason)
+                    val startJson = content.indexOf('{')
+                    val endJson = content.lastIndexOf('}')
+                    if (startJson >= 0 && endJson > startJson) {
+                        val json = JSONObject(content.substring(startJson, endJson + 1))
+                        val array = json.optJSONArray("steps") ?: JSONArray()
+                        val safeSteps = mutableListOf<ActionStep>()
+                        if (array.length() in 1..3) {
+                            for (i in 0 until array.length()) {
+                                val item = array.optJSONObject(i) ?: break
+                                val action = item.optString("action").uppercase(Locale.ROOT)
+                                val value = item.optString("value").trim()
+                                if (action !in setOf("OPEN_APP", "TYPE_TEXT", "WEB_SEARCH") ||
+                                    value.isBlank() || value.length > 180) {
+                                    safeSteps.clear()
+                                    break
+                                }
+                                safeSteps.add(ActionStep(action, value))
+                            }
+                        }
+                        if (safeSteps.isNotEmpty() && safeSteps.size == array.length()) {
+                            plan = ActionPlan(safeSteps, json.optString("reason").take(120))
                         }
                     }
                 }
             } catch (_: Exception) {
-                plan = ActionPlan("NONE", "", "Planner unavailable")
+                plan = ActionPlan(emptyList(), "Planner unavailable")
             } finally {
                 connection?.disconnect()
             }
