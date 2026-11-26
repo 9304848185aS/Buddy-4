@@ -114,6 +114,11 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            // Keep a listening window open longer so quiet pauses do not trigger
+            // rapid recognizer restarts (which cause repeated system beeps).
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1200L)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }
@@ -389,7 +394,11 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         restarting = false
         if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) stopSelf()
         else if (error != SpeechRecognizer.ERROR_CLIENT && !stopping && !pauseListening) {
-            Handler(Looper.getMainLooper()).postDelayed({ listen() }, 500)
+            // Speech timeout/no-match can happen during a pause. Back off instead
+            // of rapidly restarting every half-second and beeping over the user.
+            val retryDelay = if (error == SpeechRecognizer.ERROR_NO_MATCH ||
+                error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) 2500L else 1500L
+            Handler(Looper.getMainLooper()).postDelayed({ listen() }, retryDelay)
         }
     }
     override fun onResults(results: Bundle?) {
