@@ -386,6 +386,17 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private fun executePendingAction() {
         val step = pendingActions.getOrNull(pendingActionIndex) ?: return
+        // Defense in depth: re-check the allowlist at the execution boundary,
+        // even though the planner output was already validated before queueing.
+        // A queued action must never become executable merely because it was
+        // present in memory; it must still be an explicitly registered tool.
+        if (!AgentToolRegistry.validate(step.action, step.value) ||
+            AgentToolRegistry.find(step.action)?.requiresUserConfirmation != true) {
+            clearPendingAction()
+            afterSpeech = null
+            speak("सुरक्षा जाँच में यह action मान्य नहीं रहा। इसे रद्द कर दिया।")
+            return
+        }
         actionTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
         actionTimeout = null
         pendingActionIndex += 1
