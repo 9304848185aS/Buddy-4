@@ -375,6 +375,11 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             speak("सुरक्षित steps पूरे हो गए।")
             return
         }
+        val definition = AgentToolRegistry.find(step.action)
+        if (definition?.requiresUserConfirmation == false) {
+            executePendingAction()
+            return
+        }
         val description = when (step.action) {
             "OPEN_APP" -> "${step.value} ऐप खोलना"
             "OPEN_URL" -> "${step.value} वेबसाइट खोलना"
@@ -401,8 +406,8 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         // even though the planner output was already validated before queueing.
         // A queued action must never become executable merely because it was
         // present in memory; it must still be an explicitly registered tool.
-        if (!AgentToolRegistry.validate(step.action, step.value) ||
-            AgentToolRegistry.find(step.action)?.requiresUserConfirmation != true) {
+        val definition = AgentToolRegistry.find(step.action)
+        if (!AgentToolRegistry.validate(step.action, step.value) || definition == null) {
             clearPendingAction()
             afterSpeech = null
             speak("सुरक्षा जाँच में यह action मान्य नहीं रहा। इसे रद्द कर दिया।")
