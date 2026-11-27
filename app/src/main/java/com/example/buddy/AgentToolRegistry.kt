@@ -1,11 +1,12 @@
 package com.example.buddy
 
+import java.net.URI
+
 /**
  * Central, explicit allowlist for actions the agent may propose.
  *
  * This registry is deliberately platform-independent so it can be unit-tested.
- * Adding a tool here does not automatically grant Android permissions or bypass
- * the per-step confirmation performed by BuddyListeningService.
+ * Adding a tool does not grant Android permissions or bypass per-step confirmation.
  */
 object AgentToolRegistry {
     data class ToolDefinition(
@@ -17,6 +18,7 @@ object AgentToolRegistry {
 
     private val definitions = listOf(
         ToolDefinition("OPEN_APP", "Open an installed app by its visible name."),
+        ToolDefinition("OPEN_URL", "Open the exact website address explicitly requested by the user.", maxValueLength = 500),
         ToolDefinition("TYPE_TEXT", "Insert exact dictated text into the field the user has focused.", maxValueLength = 180),
         ToolDefinition("WEB_SEARCH", "Open a web search for the user's query.")
     )
@@ -31,12 +33,23 @@ object AgentToolRegistry {
 
     /**
      * Validates an AI-proposed tool call before it can enter the execution queue.
-     * Unknown tools, empty values, oversized values and control characters fail closed.
+     * Website navigation accepts only explicit HTTP(S) URLs with a host.
      */
     fun validate(name: String, value: String): Boolean {
         val definition = find(name) ?: return false
-        return value.isNotBlank() &&
-            value.length <= definition.maxValueLength &&
-            value.none { it.isISOControl() }
+        if (value.isBlank() || value.length > definition.maxValueLength || value.any { it.isISOControl() }) {
+            return false
+        }
+        if (definition.name == "OPEN_URL") {
+            return try {
+                val uri = URI(value.trim())
+                (uri.scheme.equals("https", true) || uri.scheme.equals("http", true)) &&
+                    !uri.host.isNullOrBlank() &&
+                    uri.userInfo == null
+            } catch (_: Exception) {
+                false
+            }
+        }
+        return true
     }
 }
