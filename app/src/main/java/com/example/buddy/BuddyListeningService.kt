@@ -288,6 +288,16 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
     }
 
+    private fun openRequestedWebsite(address: String) {
+        if (!AgentToolRegistry.validate("OPEN_URL", address)) {
+            speak("वेबसाइट का address सही नहीं है।")
+            return
+        }
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(address.trim()))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        openIntent(intent, "वेबसाइट")
+    }
+
     private fun searchWeb(command: String) {
         val query = command.removePrefix("search").removePrefix("सर्च").trim()
         if (query.isBlank()) { speak("क्या search करना है?"); return }
@@ -365,8 +375,14 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
             speak("सुरक्षित steps पूरे हो गए।")
             return
         }
+        val definition = AgentToolRegistry.find(step.action)
+        if (definition?.requiresUserConfirmation == false) {
+            executePendingAction()
+            return
+        }
         val description = when (step.action) {
             "OPEN_APP" -> "${step.value} ऐप खोलना"
+            "OPEN_URL" -> "${step.value} वेबसाइट खोलना"
             "TYPE_TEXT" -> "चुने हुए text box में ${step.value} लिखना"
             "WEB_SEARCH" -> "${step.value} को वेब पर search करना"
             else -> "यह काम करना"
@@ -386,6 +402,17 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private fun executePendingAction() {
         val step = pendingActions.getOrNull(pendingActionIndex) ?: return
+        // Defense in depth: re-check the allowlist at the execution boundary,
+        // even though the planner output was already validated before queueing.
+        // A queued action must never become executable merely because it was
+        // present in memory; it must still be an explicitly registered tool.
+        val definition = AgentToolRegistry.find(step.action)
+        if (!AgentToolRegistry.validate(step.action, step.value) || definition == null) {
+            clearPendingAction()
+            afterSpeech = null
+            speak("सुरक्षा जाँच में यह action मान्य नहीं रहा। इसे रद्द कर दिया।")
+            return
+        }
         actionTimeout?.let { actionTimeoutHandler.removeCallbacks(it) }
         actionTimeout = null
         pendingActionIndex += 1
@@ -404,6 +431,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
         when (step.action) {
             "OPEN_APP" -> if (!launchNamedApp(step.value)) speak("${step.value} ऐप नहीं मिला।")
+            "OPEN_URL" -> openRequestedWebsite(step.value)
             "TYPE_TEXT" -> typeIntoFocusedField("type ${step.value}")
             "WEB_SEARCH" -> searchWeb("search ${step.value}")
             else -> speak("यह action उपलब्ध नहीं है।")

@@ -1,11 +1,10 @@
 package com.example.buddy
 
 import org.json.JSONObject
-import java.util.Locale
 
 /**
- * Strict allowlist parser for AI-proposed phone actions.
- * Rejects unexpected fields and malformed values before execution.
+ * Strict parser for AI-proposed phone actions.
+ * Every action must pass the central registry before it can be queued.
  */
 object ActionPlanParser {
     fun parse(raw: String): List<AiBrain.ActionStep> {
@@ -29,12 +28,9 @@ object ActionPlanParser {
                 val item = steps.optJSONObject(index) ?: return emptyList()
                 if (item.keys().asSequence().toSet() != setOf("action", "value")) return emptyList()
 
-                val action = item.getString("action").uppercase(Locale.ROOT)
+                val action = item.getString("action").trim().uppercase()
                 val value = item.getString("value").trim()
-                if (action !in ALLOWED_ACTIONS || value.isBlank() || value.length > 180 ||
-                    value.any { it.isISOControl() }) {
-                    return emptyList()
-                }
+                if (!AgentToolRegistry.validate(action, value)) return emptyList()
                 result.add(AiBrain.ActionStep(action, value))
             }
             result
@@ -42,6 +38,4 @@ object ActionPlanParser {
             emptyList()
         }
     }
-
-    private val ALLOWED_ACTIONS = setOf("OPEN_APP", "TYPE_TEXT", "WEB_SEARCH")
 }
