@@ -18,7 +18,7 @@ object AgentToolRegistry {
 
     private val definitions = listOf(
         ToolDefinition("OPEN_APP", "Open an installed app by its visible name."),
-        ToolDefinition("OPEN_URL", "Open the exact website address explicitly requested by the user.", maxValueLength = 500),
+        ToolDefinition("OPEN_URL", "Open the exact website address explicitly requested by the user.", requiresUserConfirmation = false, maxValueLength = 500),
         ToolDefinition("TYPE_TEXT", "Insert exact dictated text into the field the user has focused.", maxValueLength = 180),
         ToolDefinition("WEB_SEARCH", "Open a web search for the user's query.")
     )
