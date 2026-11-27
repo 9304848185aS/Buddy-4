@@ -288,6 +288,16 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
     }
 
+    private fun openRequestedWebsite(address: String) {
+        if (!AgentToolRegistry.validate("OPEN_URL", address)) {
+            speak("वेबसाइट का address सही नहीं है।")
+            return
+        }
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(address.trim()))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        openIntent(intent, "वेबसाइट")
+    }
+
     private fun searchWeb(command: String) {
         val query = command.removePrefix("search").removePrefix("सर्च").trim()
         if (query.isBlank()) { speak("क्या search करना है?"); return }
@@ -367,6 +377,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
         val description = when (step.action) {
             "OPEN_APP" -> "${step.value} ऐप खोलना"
+            "OPEN_URL" -> "${step.value} वेबसाइट खोलना"
             "TYPE_TEXT" -> "चुने हुए text box में ${step.value} लिखना"
             "WEB_SEARCH" -> "${step.value} को वेब पर search करना"
             else -> "यह काम करना"
@@ -415,6 +426,7 @@ class BuddyListeningService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
         when (step.action) {
             "OPEN_APP" -> if (!launchNamedApp(step.value)) speak("${step.value} ऐप नहीं मिला।")
+            "OPEN_URL" -> openRequestedWebsite(step.value)
             "TYPE_TEXT" -> typeIntoFocusedField("type ${step.value}")
             "WEB_SEARCH" -> searchWeb("search ${step.value}")
             else -> speak("यह action उपलब्ध नहीं है।")
