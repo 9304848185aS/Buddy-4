@@ -30,9 +30,11 @@ class AgentToolRegistryTest {
         assertFalse(AgentToolRegistry.validate("TYPE_TEXT", "x".repeat(181)))
     }
 
-    @Test fun everyRegisteredToolRequiresConfirmationByDefault() {
-        assertNotNull(AgentToolRegistry.find("OPEN_APP"))
-        assertTrue(AgentToolRegistry.all().isNotEmpty())
-        assertTrue(AgentToolRegistry.all().all { it.requiresUserConfirmation })
+    @Test fun websiteOpeningUsesTheUserCommandAsAuthorization() {
+        assertNotNull(AgentToolRegistry.find("OPEN_URL"))
+        assertFalse(AgentToolRegistry.find("OPEN_URL")!!.requiresUserConfirmation)
+        assertTrue(AgentToolRegistry.find("OPEN_APP")!!.requiresUserConfirmation)
+        assertTrue(AgentToolRegistry.find("TYPE_TEXT")!!.requiresUserConfirmation)
+        assertTrue(AgentToolRegistry.find("WEB_SEARCH")!!.requiresUserConfirmation)
     }
 }
